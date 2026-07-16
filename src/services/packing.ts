@@ -13,6 +13,10 @@ export interface Sizes { top: string; bottom: string; shoes: string }
 
 export interface PackingInput {
   destination: string;
+  /** coordinate della destinazione (se scelta dalla ricerca sulla mappa) */
+  coords?: { lat: number; lng: number };
+  /** capienza personalizzata in litri (se assente si usa quella standard del bagaglio) */
+  capacityL?: number;
   startDate: string;
   endDate: string;
   gender: Gender;
@@ -27,6 +31,7 @@ export interface ClimateEstimate {
 
 export interface PackingItem {
   name: string; qty: number; note?: string; category: string;
+  /** oggetto aggiunto a mano dall'utente */ custom?: boolean;
   /** volume in litri per unità (stima) */ vol: number;
   /** priorità di riduzione se il bagaglio non basta (più alta = si taglia prima); 0 = intoccabile */ trim: number;
   /** quantità minima sotto cui non scendere */ min: number;
@@ -58,11 +63,16 @@ export function tripDays(startDate: string, endDate: string): number {
 }
 
 /** Stima clima: media max/min e giorni di pioggia sulle stesse date dell'anno precedente. */
-export async function estimateClimate(destination: string, startDate: string, endDate: string): Promise<ClimateEstimate | null> {
+export async function estimateClimate(destination: string, startDate: string, endDate: string, coords?: { lat: number; lng: number }): Promise<ClimateEstimate | null> {
   try {
-    const g = await fetch(`https://geocoding-api.open-meteo.com/v1/search?count=1&language=it&name=${encodeURIComponent(destination)}`);
-    const gj = await g.json();
-    const loc = gj?.results?.[0];
+    let loc: { latitude: number; longitude: number; name: string } | undefined;
+    if (coords) {
+      loc = { latitude: coords.lat, longitude: coords.lng, name: destination };
+    } else {
+      const g = await fetch(`https://geocoding-api.open-meteo.com/v1/search?count=1&language=it&name=${encodeURIComponent(destination)}`);
+      const gj = await g.json();
+      loc = gj?.results?.[0];
+    }
     if (!loc) return null;
 
     const shift = (d: string) => {
@@ -179,7 +189,7 @@ export function buildPackingList(input: PackingInput, climate: ClimateEstimate |
   if (input.transport === 'combinato') tips.push('Viaggio combinato: valgono le regole dell\u2019aereo per i liquidi anche se solo una tratta è in volo.');
 
   // ---- Adattamento alla CAPIENZA del bagaglio ----
-  const capacityL = LUGGAGE_CAPACITY_L[input.luggage];
+  const capacityL = Math.max(8, Math.min(250, input.capacityL ?? LUGGAGE_CAPACITY_L[input.luggage]));
   const usable = capacityL * 0.9; // un po' di margine per gli spazi vuoti
   const used = () => it.reduce((a, i) => a + i.vol * i.qty, 0);
   const reductions: string[] = [];
