@@ -1,5 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import AudioControls from '../components/AudioControls';
+import GuideImage from '../components/GuideImage';
+import { googleMapsDirectionsUrl, type TravelMode } from '../lib/geo';
+import { generatePresentation } from '../services/group';
 import { useApp } from '../state/AppStore';
 import * as it from '../lib/itinerary';
 import type { Day, Stop } from '../types';
@@ -42,11 +46,74 @@ function StopEditor({ day, stop, onClose }: { day: Day; stop: Stop; onClose: () 
   );
 }
 
+const MODES: { v: TravelMode; label: string }[] = [
+  { v: 'walking', label: '🚶 A piedi' },
+  { v: 'driving', label: '🚗 Auto' },
+  { v: 'transit', label: '🚌 Mezzi' },
+  { v: 'bicycling', label: '🚲 Bici' },
+];
+
+function StopDetails({ stop, onSave }: { stop: Stop; onSave: (patch: Partial<Stop>) => void }) {
+  const [mode, setMode] = useState<TravelMode>('walking');
+  const [gen, setGen] = useState(false);
+
+  const makePresentation = async () => {
+    setGen(true);
+    const text = await generatePresentation(stop.title, stop.notes || stop.description);
+    onSave({ presentation: text });
+    setGen(false);
+  };
+
+  return (
+    <div className="mt-3 space-y-3 border-t border-dashed border-[#E4D7BC] dark:border-[#33406B] pt-3">
+      <GuideImage subject={`${stop.title}${stop.address ? ' ' + stop.address : ''}`} alt={stop.title} />
+
+      {stop.coords ? (
+        <div className="space-y-2">
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Modalità di viaggio">
+            {MODES.map((m) => (
+              <button key={m.v} className={mode === m.v ? 'chip-on !py-1 !px-3 text-xs' : 'chip-off !py-1 !px-3 text-xs'} onClick={() => setMode(m.v)}>
+                {m.label}
+              </button>
+            ))}
+          </div>
+          <a className="btn-primary w-full" href={googleMapsDirectionsUrl(stop.coords, undefined, mode)} target="_blank" rel="noreferrer">
+            🧭 Portami qui ({MODES.find((m) => m.v === mode)?.label.split(' ')[1]})
+          </a>
+        </div>
+      ) : (
+        <p className="text-xs opacity-60">📍 Nessuna posizione: modifica la tappa (✏️) e cerca il luogo per attivare il navigatore.</p>
+      )}
+
+      {stop.presentation ? (
+        <div className="space-y-2">
+          <p className="text-sm leading-relaxed whitespace-pre-wrap">{stop.presentation}</p>
+          <AudioControls text={stop.presentation} audioKey={`stop-${stop.id}`} />
+          <div className="flex gap-2">
+            <button className="btn-ghost !min-h-[36px] !py-1 text-sm" onClick={() => {
+              const t = prompt('Modifica la presentazione:', stop.presentation);
+              if (t !== null) onSave({ presentation: t });
+            }}>✏️ Modifica testo</button>
+            <button className="btn-ghost !min-h-[36px] !py-1 text-sm" disabled={gen} onClick={makePresentation}>
+              {gen ? '⏳…' : '🔄 Rigenera'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button className="btn-gold w-full" disabled={gen} onClick={makePresentation}>
+          {gen ? '⏳ Scrivo la presentazione…' : '✨ Crea presentazione e audioguida'}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function ItineraryPage() {
   const { data, update } = useApp();
   const [editing, setEditing] = useState<string | null>(null);
   const [dragFrom, setDragFrom] = useState<{ dayId: string; index: number } | null>(null);
   const [editingDay, setEditingDay] = useState<string | null>(null);
+  const [openStop, setOpenStop] = useState<string | null>(null);
 
   const setDays = (days: Day[]) => update({ days });
 
@@ -64,9 +131,22 @@ export default function ItineraryPage() {
 
   return (
     <div className="max-w-xl mx-auto p-4 space-y-4">
-      <header className="flex items-center justify-between">
+      <header className="flex items-center justify-between gap-2">
         <h1 className="page-title">Itinerario</h1>
-        <button className="btn-gold !min-h-[40px] !py-1.5" onClick={addDay}>＋ Aggiungi giornata</button>
+        <div className="flex gap-1.5">
+          <button className="btn-gold !min-h-[40px] !py-1.5" onClick={addDay}>＋ Giornata</button>
+          {data.days.length > 0 && (
+            <button
+              className="btn-ghost !min-h-[40px] !py-1.5 text-red-700 dark:text-red-300"
+              aria-label="Elimina tutto l'itinerario"
+              onClick={() => {
+                if (confirm(`Eliminare TUTTO l'itinerario (${data.days.length} giornate)? Biglietti e impostazioni non vengono toccati.`) && confirm('Sicuro sicuro? Non si può annullare. 🎒')) {
+                  update({ days: [] });
+                }
+              }}
+            >🗑️ Elimina itinerario</button>
+          )}
+        </div>
       </header>
       <div className="azulejo-band" aria-hidden />
       <p className="text-xs opacity-60">Tutte le modifiche vengono salvate automaticamente. Trascina le tappe per riordinarle (o usa le frecce ▲▼).</p>
@@ -118,10 +198,10 @@ export default function ItineraryPage() {
                   <div className="flex items-start gap-2">
                     <span className="cursor-grab select-none pt-1" aria-hidden title="Trascina per riordinare">⠿</span>
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold">
+                      <button className="font-semibold text-left w-full" onClick={() => setOpenStop(openStop === s.id ? null : s.id)} aria-expanded={openStop === s.id}>
                         {s.time && <span className="tabular-nums mr-2">{s.time}</span>}
-                        {s.title}
-                      </p>
+                        {s.title} <span className="opacity-40 text-xs">{openStop === s.id ? '▲' : '▼ tocca per guida e navigatore'}</span>
+                      </button>
                       {s.description && <p className="text-sm opacity-80">{s.description}</p>}
                       <p className="text-xs opacity-60 mt-1">
                         {s.durationMinutes ? `⏱ ${s.durationMinutes} min · ` : ''}{s.cost ?? ''}
@@ -152,6 +232,9 @@ export default function ItineraryPage() {
                     </div>
                   </div>
                   {editing === s.id && <div className="mt-2"><StopEditor day={day} stop={s} onClose={() => setEditing(null)} /></div>}
+                  {openStop === s.id && (
+                    <StopDetails stop={s} onSave={(patch) => setDays(it.updateStop(data.days, day.id, s.id, patch))} />
+                  )}
                 </li>
               );
             })}

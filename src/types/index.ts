@@ -99,6 +99,7 @@ export interface Stop {
   officialSite?: string;
   ticketUrl?: string;
   notes?: string;
+  presentation?: string;       // presentazione "da guida" (generata o scritta a mano)
   visited: boolean;
   transit?: TransitHint;       // spostamento DALLA tappa precedente
 }

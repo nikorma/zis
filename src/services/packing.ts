@@ -25,7 +25,12 @@ export interface ClimateEstimate {
   tMax: number; tMin: number; rainyDays: number; label: string; source: string;
 }
 
-export interface PackingItem { name: string; qty: number; note?: string; category: string }
+export interface PackingItem {
+  name: string; qty: number; note?: string; category: string;
+  /** volume in litri per unità (stima) */ vol: number;
+  /** priorità di riduzione se il bagaglio non basta (più alta = si taglia prima); 0 = intoccabile */ trim: number;
+  /** quantità minima sotto cui non scendere */ min: number;
+}
 
 export interface PackingResult {
   days: number;
@@ -33,7 +38,17 @@ export interface PackingResult {
   items: PackingItem[];
   tips: string[];
   laundry: boolean;
+  /** litri utilizzabili del bagaglio scelto */ capacityL: number;
+  /** litri stimati occupati dalla lista finale */ usedL: number;
 }
+
+/** Capienza reale (litri) per tipo di bagaglio. */
+export const LUGGAGE_CAPACITY_L: Record<Luggage, number> = {
+  'zaino': 32,
+  'bagaglio-a-mano': 40,
+  'valigia-stiva': 85,
+  'combinato': 120,
+};
 
 export function tripDays(startDate: string, endDate: string): number {
   const ms = new Date(endDate).getTime() - new Date(startDate).getTime();
@@ -86,67 +101,69 @@ export function buildPackingList(input: PackingInput, climate: ClimateEstimate |
   const eveningCool = climate ? climate.tMin <= 17 : false;
 
   const it: PackingItem[] = [];
-  const add = (category: string, name: string, qty: number, note?: string) => { if (qty > 0) it.push({ category, name, qty, note }); };
+  const add = (category: string, name: string, qty: number, vol: number, trim: number, min: number, note?: string) => {
+    if (qty > 0) it.push({ category, name, qty, note, vol, trim, min });
+  };
   const S = input.sizes;
   const ts = (s: string) => (s ? ` (taglia ${s})` : '');
 
   // — Intimo e base —
-  add('Intimo', `Slip/boxer${ts(S.bottom)}`, cap(days + 1, laundry));
-  add('Intimo', 'Paia di calze', cap(hot ? Math.ceil(days / 2) + 1 : days + 1, laundry), hot ? 'con sandali/sneaker traspiranti ne servono meno' : undefined);
-  if (input.gender === 'donna') add('Intimo', 'Reggiseni', Math.min(Math.ceil(days / 2) + 1, 5));
-  add('Notte', 'Pigiama/maglia da notte', days > 4 ? 2 : 1);
+  add('Intimo', `Slip/boxer${ts(S.bottom)}`, cap(days + 1, laundry), 0.15, 1, 4);
+  add('Intimo', 'Paia di calze', cap(hot ? Math.ceil(days / 2) + 1 : days + 1, laundry), 0.12, 1, 3, hot ? 'con sandali/sneaker traspiranti ne servono meno' : undefined);
+  if (input.gender === 'donna') add('Intimo', 'Reggiseni', Math.min(Math.ceil(days / 2) + 1, 5), 0.2, 2, 2);
+  add('Notte', 'Pigiama/maglia da notte', days > 4 ? 2 : 1, 0.7, 3, 1);
 
   // — Sopra —
   if (hot) {
-    add('Abbigliamento', `T-shirt/canotte${ts(S.top)}`, cap(days + 1, laundry));
-    if (input.gender === 'donna') add('Abbigliamento', `Vestiti leggeri${ts(S.top)}`, Math.min(Math.ceil(days / 3), 3), 'comodi per sera');
-    else add('Abbigliamento', `Camicie leggere${ts(S.top)}`, Math.min(Math.ceil(days / 3), 3), 'per la sera');
+    add('Abbigliamento', `T-shirt/canotte${ts(S.top)}`, cap(days + 1, laundry), 0.45, 2, 3);
+    if (input.gender === 'donna') add('Abbigliamento', `Vestiti leggeri${ts(S.top)}`, Math.min(Math.ceil(days / 3), 3), 0.8, 4, 1, 'comodi per sera');
+    else add('Abbigliamento', `Camicie leggere${ts(S.top)}`, Math.min(Math.ceil(days / 3), 3), 0.7, 4, 1, 'per la sera');
   } else if (mild) {
-    add('Abbigliamento', `T-shirt${ts(S.top)}`, cap(Math.ceil(days * 0.7) + 1, laundry));
-    add('Abbigliamento', `Maglie maniche lunghe${ts(S.top)}`, Math.min(Math.ceil(days / 3) + 1, 4));
-    add('Abbigliamento', 'Felpa o maglioncino', 2);
+    add('Abbigliamento', `T-shirt${ts(S.top)}`, cap(Math.ceil(days * 0.7) + 1, laundry), 0.45, 2, 3);
+    add('Abbigliamento', `Maglie maniche lunghe${ts(S.top)}`, Math.min(Math.ceil(days / 3) + 1, 4), 0.8, 3, 1);
+    add('Abbigliamento', 'Felpa o maglioncino', 2, 1.6, 5, 1);
   } else {
-    add('Abbigliamento', `Maglie termiche/manica lunga${ts(S.top)}`, cap(days, laundry));
-    add('Abbigliamento', 'Maglioni', Math.min(Math.ceil(days / 3) + 1, 4));
+    add('Abbigliamento', `Maglie termiche/manica lunga${ts(S.top)}`, cap(days, laundry), 0.6, 2, 3);
+    add('Abbigliamento', 'Maglioni', Math.min(Math.ceil(days / 3) + 1, 4), 2.6, 5, 1, 'il più pesante indossalo in viaggio');
   }
 
   // — Sotto —
   if (hot) {
-    add('Abbigliamento', `Pantaloncini/gonne${ts(S.bottom)}`, Math.min(Math.ceil(days / 2), 5));
-    add('Abbigliamento', `Pantaloni lunghi leggeri${ts(S.bottom)}`, 1, 'sere, luoghi di culto, aria condizionata');
+    add('Abbigliamento', `Pantaloncini/gonne${ts(S.bottom)}`, Math.min(Math.ceil(days / 2), 5), 0.55, 3, 2);
+    add('Abbigliamento', `Pantaloni lunghi leggeri${ts(S.bottom)}`, 1, 1.0, 4, 1, 'sere, luoghi di culto, aria condizionata');
   } else {
-    add('Abbigliamento', `Pantaloni${ts(S.bottom)}`, Math.min(Math.ceil(days / 3) + 1, 4));
+    add('Abbigliamento', `Pantaloni${ts(S.bottom)}`, Math.min(Math.ceil(days / 3) + 1, 4), 1.2, 3, 2, 'uno indossalo in viaggio');
   }
 
   // — Strati e pioggia —
-  if (eveningCool && hot) add('Abbigliamento', 'Felpa leggera o scialle', 1, 'per la sera');
-  if (mild || cold) add('Abbigliamento', cold ? 'Giacca calda/piumino' : 'Giacca leggera', 1);
-  if (rainy) { add('Abbigliamento', 'K-way o ombrello pieghevole', 1, `~${climate?.rainyDays} giorni di pioggia attesi`); }
+  if (eveningCool && hot) add('Abbigliamento', 'Felpa leggera o scialle', 1, 1.2, 4, 1, 'per la sera');
+  if (mild || cold) add('Abbigliamento', cold ? 'Giacca calda/piumino' : 'Giacca leggera', 1, cold ? 3.5 : 1.5, 0, 1, 'indossala in viaggio: non conta nel bagaglio');
+  if (rainy) { add('Abbigliamento', 'K-way o ombrello pieghevole', 1, 0.6, 4, 1, `~${climate?.rainyDays} giorni di pioggia attesi`); }
 
   // — Scarpe —
-  add('Scarpe', `Scarpe comode da cammino${ts(S.shoes)}`, 1, 'già collaudate, mai nuove!');
-  if (hot) add('Scarpe', `Sandali${ts(S.shoes)}`, 1);
-  add('Scarpe', `Scarpe per la sera${ts(S.shoes)}`, 1, 'facoltative');
+  add('Scarpe', `Scarpe comode da cammino${ts(S.shoes)}`, 1, 0, 0, 1, 'già collaudate, mai nuove! Indossale in viaggio');
+  if (hot) add('Scarpe', `Sandali${ts(S.shoes)}`, 1, 1.6, 4, 1);
+  add('Scarpe', `Scarpe per la sera${ts(S.shoes)}`, 1, 2.8, 6, 0, 'facoltative');
 
   // — Mare / caldo —
   if (hot) {
-    add('Accessori', 'Costume da bagno', input.transport === 'nave' ? 2 : 1);
-    add('Accessori', 'Cappello + occhiali da sole', 1);
-    add('Cura', 'Crema solare alta protezione', 1, input.luggage === 'bagaglio-a-mano' ? '≤100 ml in cabina!' : undefined);
-    add('Accessori', 'Borraccia', 1);
+    add('Accessori', 'Costume da bagno', input.transport === 'nave' ? 2 : 1, 0.3, 3, 1);
+    add('Accessori', 'Cappello + occhiali da sole', 1, 0.5, 2, 1);
+    add('Cura', 'Crema solare alta protezione', 1, 0.3, 1, 1, input.luggage === 'bagaglio-a-mano' ? '≤100 ml in cabina!' : undefined);
+    add('Accessori', 'Borraccia', 1, 0.8, 3, 1);
   }
 
   // — Cura e salute —
-  add('Cura', 'Beauty case (spazzolino, deodorante…)', 1, input.luggage === 'bagaglio-a-mano' || (input.luggage === 'combinato' && input.transport === 'aereo') ? 'liquidi ≤100 ml in busta trasparente' : undefined);
-  add('Cura', 'Medicinali personali + cerotti', 1);
+  add('Cura', 'Beauty case (spazzolino, deodorante…)', 1, 2.2, 1, 1, input.luggage === 'bagaglio-a-mano' || (input.luggage === 'combinato' && input.transport === 'aereo') ? 'liquidi ≤100 ml in busta trasparente' : undefined);
+  add('Cura', 'Medicinali personali + cerotti', 1, 0.5, 0, 1);
 
   // — Tech e documenti —
-  add('Tech', 'Caricatore + powerbank', 1, input.transport === 'aereo' ? 'powerbank SEMPRE in cabina, mai in stiva' : undefined);
-  add('Documenti', 'Documento/passaporto + tessera sanitaria', 1);
-  if (input.transport === 'aereo' || input.transport === 'combinato') add('Documenti', 'Carte d\u2019imbarco scaricate offline', 1);
-  if (input.transport === 'nave') add('Cura', 'Cerotti/pastiglie anti mal di mare', 1);
-  if (input.transport === 'auto') add('Documenti', 'Patente + documenti auto', 1);
-  add('Accessori', 'Zainetto pieghevole per il giorno', 1);
+  add('Tech', 'Caricatore + powerbank', 1, 0.5, 0, 1, input.transport === 'aereo' ? 'powerbank SEMPRE in cabina, mai in stiva' : undefined);
+  add('Documenti', 'Documento/passaporto + tessera sanitaria', 1, 0.05, 0, 1);
+  if (input.transport === 'aereo' || input.transport === 'combinato') add('Documenti', 'Carte d\u2019imbarco scaricate offline', 1, 0, 0, 1);
+  if (input.transport === 'nave') add('Cura', 'Cerotti/pastiglie anti mal di mare', 1, 0.1, 0, 1);
+  if (input.transport === 'auto') add('Documenti', 'Patente + documenti auto', 1, 0.05, 0, 1);
+  add('Accessori', 'Zainetto pieghevole per il giorno', 1, 0.5, 3, 1);
 
   // — Consigli su misura —
   const tips: string[] = [];
@@ -159,5 +176,37 @@ export function buildPackingList(input: PackingInput, climate: ClimateEstimate |
   if (input.transport === 'treno') tips.push('Treno: preferisci un bagaglio che sali in cappelliera da solo; lucchetto se viaggi di notte.');
   if (input.transport === 'combinato') tips.push('Viaggio combinato: valgono le regole dell\u2019aereo per i liquidi anche se solo una tratta è in volo.');
 
-  return { days, climate, items: it, tips, laundry };
+  // ---- Adattamento alla CAPIENZA del bagaglio ----
+  const capacityL = LUGGAGE_CAPACITY_L[input.luggage];
+  const usable = capacityL * 0.9; // un po' di margine per gli spazi vuoti
+  const used = () => it.reduce((a, i) => a + i.vol * i.qty, 0);
+  const reductions: string[] = [];
+
+  // riduco partendo dai capi con priorità di taglio più alta, senza scendere sotto i minimi
+  let guard = 200;
+  while (used() > usable && guard-- > 0) {
+    const candidates = it.filter((i) => i.trim > 0 && i.qty > i.min);
+    if (candidates.length === 0) break;
+    candidates.sort((a, b) => b.trim - a.trim || b.vol - a.vol);
+    const victim = candidates[0];
+    victim.qty -= 1;
+    reductions.push(victim.name);
+  }
+  // capi azzerati: fuori dalla lista
+  for (let i = it.length - 1; i >= 0; i--) if (it[i].qty === 0) { reductions.push(it[i].name + ' (eliminato)'); it.splice(i, 1); }
+
+  const usedL = Math.round(used());
+  if (reductions.length > 0) {
+    const counts: Record<string, number> = {};
+    for (const r of reductions) counts[r] = (counts[r] ?? 0) + 1;
+    const summary = Object.entries(counts).map(([n, c]) => (c > 1 ? `${n} (−${c})` : `${n} (−1)`)).join(', ');
+    tips.push(`🧳 Il tuo ${input.luggage === 'zaino' ? 'zaino (~' + capacityL + ' L)' : 'bagaglio (~' + capacityL + ' L)'} non basta per la lista ideale: ho ridotto ${summary}. Trucchi: indossa i capi più ingombranti in viaggio e prevedi un lavaggio in più.`);
+  } else {
+    tips.push(`🧳 Occupazione stimata: ~${usedL} L su ${capacityL} L disponibili — ci sta tutto${usedL < usable * 0.7 ? ', con spazio per i souvenir' : ''}.`);
+  }
+  if (used() > usable) {
+    tips.push('⚠️ Anche riducendo al minimo, lo spazio è stretto: valuta un bagaglio più grande o il lavaggio frequente.');
+  }
+
+  return { days, climate, items: it, tips, laundry, capacityL, usedL };
 }

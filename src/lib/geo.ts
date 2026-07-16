@@ -93,9 +93,11 @@ export function clampRadius(r: number): number {
   return Math.min(100, Math.max(40, Math.round(r)));
 }
 
-/** Link Google Maps per navigazione a piedi ("Portami qui"). */
-export function googleMapsDirectionsUrl(dest: LatLng, origin?: LatLng): string {
+export type TravelMode = 'walking' | 'driving' | 'transit' | 'bicycling';
+
+/** Link Google Maps "Portami qui" (default: a piedi, modalità cambiabile). */
+export function googleMapsDirectionsUrl(dest: LatLng, origin?: LatLng, mode: TravelMode = 'walking'): string {
   const d = `${dest.lat},${dest.lng}`;
   const o = origin ? `&origin=${origin.lat},${origin.lng}` : '';
-  return `https://www.google.com/maps/dir/?api=1&destination=${d}${o}&travelmode=walking`;
+  return `https://www.google.com/maps/dir/?api=1&destination=${d}${o}&travelmode=${mode}`;
 }

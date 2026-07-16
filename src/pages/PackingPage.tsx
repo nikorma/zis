@@ -100,10 +100,10 @@ export default function PackingPage() {
         <div className="space-y-1">
           <p className="label !mb-0">🧳 Che bagaglio avrai?</p>
           <div className="flex flex-wrap gap-2">
-            <Chip v={'zaino' as Luggage} cur={input.luggage} on={(l) => set('luggage', l)} label="🎒 Zaino" />
-            <Chip v={'bagaglio-a-mano' as Luggage} cur={input.luggage} on={(l) => set('luggage', l)} label="🧳 Bagaglio a mano" />
-            <Chip v={'valigia-stiva' as Luggage} cur={input.luggage} on={(l) => set('luggage', l)} label="🛄 Valigia da stiva" />
-            <Chip v={'combinato' as Luggage} cur={input.luggage} on={(l) => set('luggage', l)} label="➕ Combinato" />
+            <Chip v={'zaino' as Luggage} cur={input.luggage} on={(l) => set('luggage', l)} label="🎒 Zaino (~32 L)" />
+            <Chip v={'bagaglio-a-mano' as Luggage} cur={input.luggage} on={(l) => set('luggage', l)} label="🧳 Bagaglio a mano (~40 L)" />
+            <Chip v={'valigia-stiva' as Luggage} cur={input.luggage} on={(l) => set('luggage', l)} label="🛄 Valigia da stiva (~85 L)" />
+            <Chip v={'combinato' as Luggage} cur={input.luggage} on={(l) => set('luggage', l)} label="➕ Combinato (~120 L)" />
           </div>
         </div>
 
@@ -126,6 +126,21 @@ export default function PackingPage() {
 
       {result && (
         <>
+          <section className="card space-y-2">
+            <div className="flex items-baseline justify-between text-sm">
+              <span className="font-semibold">🧳 Spazio nel bagaglio</span>
+              <span className="tabular-nums">{result.usedL} / {result.capacityL} L</span>
+            </div>
+            <div className="w-full bg-crema dark:bg-[#141C33] rounded-full h-3" role="progressbar" aria-valuenow={result.usedL} aria-valuemax={result.capacityL} aria-label="Occupazione del bagaglio">
+              <div
+                className="h-3 rounded-full transition-all"
+                style={{
+                  width: `${Math.min(100, (result.usedL / result.capacityL) * 100)}%`,
+                  background: result.usedL > result.capacityL * 0.9 ? '#E14E2E' : result.usedL > result.capacityL * 0.7 ? '#FFC145' : '#3FBF9B',
+                }}
+              />
+            </div>
+          </section>
           <section className="card space-y-1 text-sm">
             {result.tips.map((t, i) => <p key={i}>💡 {t}</p>)}
           </section>
