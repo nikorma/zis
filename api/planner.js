@@ -44,7 +44,7 @@ Regole:
 - Tappe realistiche e vicine tra loro, ordine geografico sensato, 4-7 tappe al giorno.
 - "paid": true se serve un biglietto d'ingresso, false se gratuito; NON inventare mai prezzi od orari.
 - "officialSite": SOLO il dominio ufficiale se ne sei assolutamente certo (es. museo molto famoso); in dubbio metti null.
-- Lingua: italiano.`;
+- Lingua: italiano. Se citi l'app, chiamala \"ZainoInSpalla\".`;
 
   const user = `Destinazione: ${destination}
 Periodo: dal ${startDate} (check-in ore ${checkinTime || '15:00'}) al ${endDate} (check-out ore ${checkoutTime || '10:00'})

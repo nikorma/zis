@@ -98,6 +98,7 @@ export interface Stop {
   address?: string;
   officialSite?: string;
   ticketUrl?: string;
+  phone?: string;              // telefono (utile per ristoranti)
   notes?: string;
   presentation?: string;       // presentazione "da guida" (generata o scritta a mano)
   paid?: boolean;              // richiede biglietto? (true/false; assente = non noto)

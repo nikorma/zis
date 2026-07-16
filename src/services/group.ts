@@ -169,7 +169,7 @@ export async function generatePresentation(title: string, notes?: string): Promi
           `Scrivi una presentazione da audioguida (120-160 parole, tono caldo, in italiano, seconda persona plurale) ` +
           `per questa tappa di un viaggio di gruppo: "${title}"` +
           (notes ? ` — nota di chi l'ha proposta: ${notes}` : '') +
-          `. Se è un luogo che non conosci con certezza, resta generico e non inventare orari, prezzi o dettagli storici.`,
+          `. Se è un luogo che non conosci con certezza, resta generico e non inventare orari, prezzi o dettagli storici. Se citi l'app, chiamala \"ZainoInSpalla\".`,
       }),
     });
     if (!res.ok) return fallback;

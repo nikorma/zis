@@ -21,6 +21,13 @@ export function updateDay(days: Day[], dayId: string, patch: Partial<Pick<Day, '
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 
+/** Ordina le tappe per orario (quelle senza orario in coda, ordine invariato). */
+export function sortStopsByTime(stops: Stop[]): Stop[] {
+  const withTime = stops.filter((s) => s.time).sort((a, b) => (a.time as string).localeCompare(b.time as string));
+  const noTime = stops.filter((s) => !s.time);
+  return [...withTime, ...noTime];
+}
+
 export function addStop(days: Day[], dayId: string, stop: Omit<Stop, 'id' | 'visited'>): Day[] {
   const s: Stop = { ...stop, id: uid('stop'), visited: false };
   return days.map((d) => (d.id === dayId ? { ...d, stops: [...d.stops, s] } : d));

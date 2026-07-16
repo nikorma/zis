@@ -93,7 +93,7 @@ export default function PlannerPage() {
     const txt = plan.map((d) =>
       `📅 ${d.date} — ${d.title}\n` + d.stops.map((s) => `  ${s.time ?? ''} ${s.title}${s.address ? ` (${s.address})` : ''}`).join('\n')
     ).join('\n\n');
-    const full = `Itinerario ${destPicked?.name ?? dest} (${start} → ${end})\n\n${txt}\n\nCreato con Zaino in Spalla 🎒`;
+    const full = `Itinerario ${destPicked?.name ?? dest} (${start} → ${end})\n\n${txt}\n\nCreato con ZainoInSpalla 🎒`;
     if (navigator.share) navigator.share({ text: full }).catch(() => {});
     else navigator.clipboard.writeText(full).then(() => alert('Itinerario copiato: incollalo dove vuoi!'));
   };

@@ -4,7 +4,9 @@ import AudioControls from '../components/AudioControls';
 import GuideImage from '../components/GuideImage';
 import { googleMapsDirectionsUrl, type TravelMode } from '../lib/geo';
 import { generatePresentation } from '../services/group';
-import { geocodeOne, generateInteriorGuide } from '../services/guidegen';
+import { geocodeOne, generateInteriorGuide, findRestaurants, type FoodPlace } from '../services/guidegen';
+import { hourForecast, forecastAvailable, type HourForecast } from '../services/forecast';
+import { formatDistance } from '../lib/geo';
 import WorkingScreen from '../components/WorkingScreen';
 import { useApp } from '../state/AppStore';
 import * as it from '../lib/itinerary';
@@ -55,7 +57,10 @@ const MODES: { v: TravelMode; label: string }[] = [
   { v: 'bicycling', label: '🚲 Bici' },
 ];
 
-function StopDetails({ stop, onSave }: { stop: Stop; onSave: (patch: Partial<Stop>) => void }) {
+const FOOD_RE = /ristorant|trattor|pizzer|oster|taverna|pranz|cena|colazion|brunch|aperitiv|mangiare|tapas|bistro|sushi|kebab|street ?food|gelater|panin|bar\b/i;
+
+function StopDetails({ stop, date, onSave }: { stop: Stop; date: string; onSave: (patch: Partial<Stop>) => void }) {
+  const isFood = FOOD_RE.test(stop.title) || FOOD_RE.test(stop.description ?? '');
   const [mode, setMode] = useState<TravelMode>('walking');
   const [gen, setGen] = useState(false);
   const [genGuide, setGenGuide] = useState(false);
@@ -63,16 +68,41 @@ function StopDetails({ stop, onSave }: { stop: Stop; onSave: (patch: Partial<Sto
   const [locating, setLocating] = useState(false);
   const [locFailed, setLocFailed] = useState(false);
   const [pt, setPt] = useState(0);
+  const [wx, setWx] = useState<HourForecast | null>(null);
+  const [finder, setFinder] = useState<null | 'ask' | 'loading' | FoodPlace[]>(null);
+
+  // 🌦️ Previsioni per l'ORA e il LUOGO della tappa (solo entro 7 giorni, sempre fresche)
+  useEffect(() => {
+    let alive = true;
+    setWx(null);
+    if (stop.coords && forecastAvailable(date)) {
+      hourForecast(stop.coords, date, stop.time).then((r) => { if (alive) setWx(r); });
+    }
+    return () => { alive = false; };
+  }, [stop.coords, date, stop.time]);
+
+  const openFinder = () => setFinder('ask');
+  const searchFood = async (alto: boolean) => {
+    if (!stop.coords) return;
+    setFinder('loading');
+    const r = await findRestaurants(stop.coords, alto);
+    setFinder(r);
+  };
 
   // 📍 Geocodifica automatica: se la tappa non ha coordinate, le cerca da sola (una volta)
   useEffect(() => {
     let alive = true;
     if (!stop.coords && !locFailed && navigator.onLine) {
       setLocating(true);
-      geocodeOne(`${stop.title} ${stop.address ?? ''}`.trim()).then((r) => {
+      geocodeOne(stop.title, stop.address).then((r) => {
         if (!alive) return;
         setLocating(false);
-        if (r) onSave({ coords: r.coords, address: stop.address || r.address });
+        if (r) onSave({
+          coords: r.coords,
+          address: stop.address || r.address,
+          phone: stop.phone || r.phone,
+          officialSite: stop.officialSite || r.website,
+        });
         else setLocFailed(true);
       });
     }
@@ -115,10 +145,67 @@ function StopDetails({ stop, onSave }: { stop: Stop; onSave: (patch: Partial<Sto
         />
       )}
       <GuideImage subject={`${stop.title}${stop.address ? ' ' + stop.address : ''}`} alt={stop.title} />
+      {wx && (
+        <p className="text-sm font-semibold">
+          {wx.emoji} Previsto {wx.temp}°C {stop.time ? `alle ${stop.time}` : 'a mezzogiorno'}
+          {wx.precipProb >= 25 && <span className="badge-warn ml-2">☔ pioggia {wx.precipProb}%</span>}
+        </p>
+      )}
       {stop.description && <p className="text-sm leading-relaxed">{stop.description}</p>}
 
+      {/* 📞 Contatti (tappe cibo) */}
+      {isFood && (
+        <div className="rounded-xl bg-crema dark:bg-[#141C33] p-3 space-y-1.5">
+          {stop.address && <p className="text-sm">📍 {stop.address}</p>}
+          {stop.phone
+            ? <p className="text-sm">📞 <a className="underline font-semibold" href={`tel:${stop.phone.replace(/\s/g, '')}`}>{stop.phone}</a></p>
+            : <p className="text-sm">📞 <a className="underline" href={`https://www.google.com/search?q=${encodeURIComponent(stop.title + ' ' + (stop.address ?? '') + ' telefono')}`} target="_blank" rel="noreferrer">cerca il numero</a></p>}
+          {stop.officialSite
+            ? <p className="text-sm">🌐 <a className="underline font-semibold" href={stop.officialSite} target="_blank" rel="noreferrer">sito del locale ↗</a></p>
+            : <p className="text-sm">🌐 <a className="underline" href={`https://www.google.com/search?q=${encodeURIComponent(stop.title + ' ' + (stop.address ?? ''))}`} target="_blank" rel="noreferrer">cerca il sito</a></p>}
+          <button className="btn-gold w-full !min-h-[42px]" onClick={openFinder}>🍽️ Cerca altri posti per mangiare qui vicino</button>
+        </div>
+      )}
+
+      {/* 🍽️ Finder ristoranti */}
+      {isFood && finder === 'ask' && (
+        <div className="rounded-xl border-2 border-oro p-3 space-y-2">
+          <p className="font-semibold text-sm">💶 Vuoi spendere tanto?</p>
+          <div className="grid grid-cols-2 gap-2">
+            <button className="btn-secondary !min-h-[42px]" onClick={() => searchFood(true)}>Sì, si festeggia 🥂</button>
+            <button className="btn-secondary !min-h-[42px]" onClick={() => searchFood(false)}>No, economico 👛</button>
+          </div>
+        </div>
+      )}
+      {isFood && finder === 'loading' && <p className="text-sm opacity-70 animate-pulse">🍝 Annuso le cucine del quartiere…</p>}
+      {isFood && Array.isArray(finder) && (
+        <div className="space-y-2">
+          <p className="font-semibold text-sm">🍽️ Vicino a questa tappa ({finder.length}):</p>
+          {finder.length === 0 && <p className="text-sm opacity-70">Nessun locale mappato qui vicino: prova la ricerca su Google Maps.</p>}
+          {finder.map((f) => (
+            <div key={f.name + f.meters} className="rounded-xl bg-crema dark:bg-[#141C33] p-3">
+              <div className="flex items-baseline justify-between gap-2">
+                <p className="font-semibold text-sm">{f.name}</p>
+                <span className="text-xs tabular-nums shrink-0">📏 {formatDistance(f.meters)}</span>
+              </div>
+              <p className="text-xs opacity-70">{f.cuisine ? `🍴 ${f.cuisine} · ` : ''}{f.address}</p>
+              <div className="flex flex-wrap gap-2 mt-1.5">
+                <a className="btn-ghost !min-h-[34px] !py-1 text-xs" target="_blank" rel="noreferrer"
+                   href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(f.name)}%20${f.coords.lat},${f.coords.lng}`}>
+                  ⭐ Recensioni (Google)
+                </a>
+                <a className="btn-ghost !min-h-[34px] !py-1 text-xs" target="_blank" rel="noreferrer"
+                   href={googleMapsDirectionsUrl(f.coords, undefined, 'walking')}>🧭 Portami lì</a>
+                {f.phone && <a className="btn-ghost !min-h-[34px] !py-1 text-xs" href={`tel:${f.phone.replace(/\s/g, '')}`}>📞 Chiama</a>}
+              </div>
+            </div>
+          ))}
+          <p className="text-[11px] opacity-60">Distanze dalla tappa; le recensioni si aprono su Google Maps. Il filtro budget usa il tipo di locale: verifica il menù!</p>
+        </div>
+      )}
+
       {/* 🎟️ Biglietto */}
-      {(stop.paid !== undefined || stop.ticketUrl || stop.officialSite) && (
+      {!isFood && (stop.paid !== undefined || stop.ticketUrl || stop.officialSite) && (
         <div className="rounded-xl bg-crema dark:bg-[#141C33] p-3 space-y-1.5">
           <p className="text-sm font-semibold">
             {stop.paid === true && <>🎟️ <span className="badge-warn">Biglietto a pagamento</span></>}
@@ -162,7 +249,7 @@ function StopDetails({ stop, onSave }: { stop: Stop; onSave: (patch: Partial<Sto
       )}
 
       {/* ✨ Presentazione + audio */}
-      {stop.presentation ? (
+      {!isFood && (stop.presentation ? (
         <div className="space-y-2">
           <p className="text-sm leading-relaxed whitespace-pre-wrap">{stop.presentation}</p>
           <AudioControls text={stop.presentation} audioKey={`stop-${stop.id}`} />
@@ -180,10 +267,10 @@ function StopDetails({ stop, onSave }: { stop: Stop; onSave: (patch: Partial<Sto
         <button className="btn-gold w-full" disabled={gen} onClick={makePresentation}>
           {gen ? '⏳ Scrivo la presentazione…' : '✨ Crea presentazione e audioguida'}
         </button>
-      )}
+      ))}
 
       {/* 🏛️ Guida interna punto per punto */}
-      {g && cur ? (
+      {!isFood && (g && cur ? (
         <div className="rounded-2xl border-2 border-oro/60 p-3 space-y-2 bg-oro-tenue/20 dark:bg-oro/10">
           <div className="flex items-center justify-between">
             <p className="font-display font-semibold">🏛️ Guida interna · {pt + 1}/{g.length}</p>
@@ -210,7 +297,7 @@ function StopDetails({ stop, onSave }: { stop: Stop; onSave: (patch: Partial<Sto
           </button>
           {guideErr && <p className="text-xs text-red-700 dark:text-red-300" role="alert">{guideErr}</p>}
         </div>
-      )}
+      ))}
     </div>
   );
 }
@@ -340,7 +427,7 @@ export default function ItineraryPage() {
                   </div>
                   {editing === s.id && <div className="mt-2"><StopEditor day={day} stop={s} onClose={() => setEditing(null)} /></div>}
                   {openStop === s.id && (
-                    <StopDetails stop={s} onSave={(patch) => setDays(it.updateStop(data.days, day.id, s.id, patch))} />
+                    <StopDetails stop={s} date={day.date} onSave={(patch) => setDays(it.updateStop(data.days, day.id, s.id, patch))} />
                   )}
                 </li>
               );
