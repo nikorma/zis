@@ -2,11 +2,21 @@ import { useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useApp } from '../state/AppStore';
 import MapView, { type MapMarker } from '../components/MapView';
+import { useGeolocation } from '../hooks/useGeolocation';
 import { distanceMeters, walkMinutes, bikeMinutes, formatDistance, googleMapsDirectionsUrl } from '../lib/geo';
 import type { LatLng } from '../types';
 
+import { useEffect } from 'react';
+function useEffectOnceForGeo(cond: boolean, start: () => void) {
+  useEffect(() => { if (cond) start(); /* eslint-disable-next-line */ }, [cond]);
+}
+
 export default function MapPage() {
   const { data } = useApp();
+  const geo = useGeolocation();
+  // Se non c'è alcun itinerario e il consenso GPS è già stato dato, mostra dove sei
+  const noStopsAtAll = data.days.every((d) => d.stops.every((st) => !st.coords));
+  useEffectOnceForGeo(noStopsAtAll && data.settings.geoConsent, geo.start);
   const { dayId } = useParams();
   const [selectedDayId, setSelectedDayId] = useState<string | null>(dayId ?? null);
 
@@ -18,6 +28,7 @@ export default function MapPage() {
   const coordsStops = useMemo(() => (day?.stops ?? []).filter((s) => s.coords), [day]);
 
   const markers: MapMarker[] = [
+    ...(noStopsAtAll && geo.position ? [{ coords: geo.position, label: '📍 Tu sei qui', kind: 'user' as const }] : []),
     ...coordsStops.map((s, i) => ({
       coords: s.coords as LatLng,
       label: `${i + 1}. ${s.title}${s.time ? ` (${s.time})` : ''}`,

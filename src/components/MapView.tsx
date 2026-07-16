@@ -76,7 +76,7 @@ export default function MapView({
     if (pts.length > 0) {
       m.fitBounds(L.latLngBounds(pts as L.LatLngExpression[]), { padding: [30, 30], maxZoom: 17 });
     } else {
-      m.setView([37.3891, -5.9845], 14);
+      m.setView([42.3, 12.5], 5); // nessun punto: vista Italia
     }
   }, [markers, route, highlight]);
 

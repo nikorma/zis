@@ -34,7 +34,7 @@ export default async function handler(req, res) {
   }
 
   const system = `Sei un travel planner esperto. Rispondi ESCLUSIVAMENTE con JSON valido, senza testo attorno, senza markdown.
-Schema: {"days":[{"date":"YYYY-MM-DD","title":"...","stops":[{"title":"...","time":"HH:MM","durationMinutes":60,"description":"1-2 frasi utili","address":"via o zona (se nota)"}]}]}
+Schema: {"days":[{"date":"YYYY-MM-DD","title":"...","stops":[{"title":"...","time":"HH:MM","durationMinutes":60,"description":"2-3 frasi ricche e interessanti (storia/cosa vedere)","address":"via o zona (se nota)","paid":true|false,"officialSite":"URL ufficiale SOLO se ne sei certo, altrimenti null"}]}]}
 Regole:
 - Una voce in "days" per OGNI giorno dal check-in al check-out inclusi.
 - Il primo giorno inizia DOPO l'orario di check-in; l'ultimo finisce PRIMA del check-out.
@@ -42,7 +42,8 @@ Regole:
 - ${lunchOut ? 'Includi ogni giorno una tappa pranzo in zona (indica il tipo di locale, non inventare nomi se non sei certo).' : 'NON pianificare pranzi fuori.'}
 - ${dinnerOut ? 'Includi ogni giorno una tappa cena.' : 'NON pianificare cene fuori.'}
 - Tappe realistiche e vicine tra loro, ordine geografico sensato, 4-7 tappe al giorno.
-- NON inventare prezzi né orari di apertura: se un luogo richiede biglietto scrivi in description "biglietto: verificare sul sito ufficiale".
+- "paid": true se serve un biglietto d'ingresso, false se gratuito; NON inventare mai prezzi od orari.
+- "officialSite": SOLO il dominio ufficiale se ne sei assolutamente certo (es. museo molto famoso); in dubbio metti null.
 - Lingua: italiano.`;
 
   const user = `Destinazione: ${destination}

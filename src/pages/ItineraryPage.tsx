@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AudioControls from '../components/AudioControls';
 import GuideImage from '../components/GuideImage';
 import { googleMapsDirectionsUrl, type TravelMode } from '../lib/geo';
 import { generatePresentation } from '../services/group';
+import { geocodeOne, generateInteriorGuide } from '../services/guidegen';
 import { useApp } from '../state/AppStore';
 import * as it from '../lib/itinerary';
 import type { Day, Stop } from '../types';
@@ -56,6 +57,27 @@ const MODES: { v: TravelMode; label: string }[] = [
 function StopDetails({ stop, onSave }: { stop: Stop; onSave: (patch: Partial<Stop>) => void }) {
   const [mode, setMode] = useState<TravelMode>('walking');
   const [gen, setGen] = useState(false);
+  const [genGuide, setGenGuide] = useState(false);
+  const [guideErr, setGuideErr] = useState<string | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [locFailed, setLocFailed] = useState(false);
+  const [pt, setPt] = useState(0);
+
+  // 📍 Geocodifica automatica: se la tappa non ha coordinate, le cerca da sola (una volta)
+  useEffect(() => {
+    let alive = true;
+    if (!stop.coords && !locFailed && navigator.onLine) {
+      setLocating(true);
+      geocodeOne(`${stop.title} ${stop.address ?? ''}`.trim()).then((r) => {
+        if (!alive) return;
+        setLocating(false);
+        if (r) onSave({ coords: r.coords, address: stop.address || r.address });
+        else setLocFailed(true);
+      });
+    }
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stop.id, stop.coords]);
 
   const makePresentation = async () => {
     setGen(true);
@@ -64,10 +86,48 @@ function StopDetails({ stop, onSave }: { stop: Stop; onSave: (patch: Partial<Sto
     setGen(false);
   };
 
+  const makeGuide = async () => {
+    setGenGuide(true); setGuideErr(null);
+    const res = await generateInteriorGuide(stop.title, stop.address);
+    setGenGuide(false);
+    if (res.ok) { onSave({ interiorGuide: res.points }); setPt(0); }
+    else setGuideErr(res.error);
+  };
+
+  const g = stop.interiorGuide;
+  const cur = g && g[Math.min(pt, g.length - 1)];
+  const searchTickets = `https://www.google.com/search?q=${encodeURIComponent('biglietti ' + stop.title + ' sito ufficiale')}`;
+
   return (
     <div className="mt-3 space-y-3 border-t border-dashed border-[#E4D7BC] dark:border-[#33406B] pt-3">
       <GuideImage subject={`${stop.title}${stop.address ? ' ' + stop.address : ''}`} alt={stop.title} />
+      {stop.description && <p className="text-sm leading-relaxed">{stop.description}</p>}
 
+      {/* 🎟️ Biglietto */}
+      {(stop.paid !== undefined || stop.ticketUrl || stop.officialSite) && (
+        <div className="rounded-xl bg-crema dark:bg-[#141C33] p-3 space-y-1.5">
+          <p className="text-sm font-semibold">
+            {stop.paid === true && <>🎟️ <span className="badge-warn">Biglietto a pagamento</span></>}
+            {stop.paid === false && <>🎟️ <span className="badge-ok">Ingresso gratuito</span> <span className="text-xs opacity-60">(da verificare)</span></>}
+            {stop.paid === undefined && <>🎟️ Biglietto: da verificare</>}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {(stop.ticketUrl || stop.officialSite) && (
+              <a className="btn-primary !min-h-[38px] !py-1 text-sm" href={stop.ticketUrl || stop.officialSite} target="_blank" rel="noreferrer">
+                🛒 {stop.ticketUrl ? 'Acquista' : 'Sito ufficiale'} ↗
+              </a>
+            )}
+            {stop.paid !== false && !stop.ticketUrl && (
+              <a className="btn-secondary !min-h-[38px] !py-1 text-sm" href={searchTickets} target="_blank" rel="noreferrer">
+                🔎 Cerca biglietti ufficiali
+              </a>
+            )}
+          </div>
+          <p className="text-[11px] opacity-60">Prezzi e orari non sono garantiti: compra solo su siti ufficiali.</p>
+        </div>
+      )}
+
+      {/* 🧭 Navigatore */}
       {stop.coords ? (
         <div className="space-y-2">
           <div className="flex flex-wrap gap-1.5" role="group" aria-label="Modalità di viaggio">
@@ -81,10 +141,13 @@ function StopDetails({ stop, onSave }: { stop: Stop; onSave: (patch: Partial<Sto
             🧭 Portami qui ({MODES.find((m) => m.v === mode)?.label.split(' ')[1]})
           </a>
         </div>
+      ) : locating ? (
+        <p className="text-sm opacity-70 animate-pulse">📍 Cerco la posizione della tappa…</p>
       ) : (
-        <p className="text-xs opacity-60">📍 Nessuna posizione: modifica la tappa (✏️) e cerca il luogo per attivare il navigatore.</p>
+        <p className="text-xs opacity-60">📍 Posizione non trovata automaticamente: modifica la tappa (✏️) e usa la ricerca luoghi.</p>
       )}
 
+      {/* ✨ Presentazione + audio */}
       {stop.presentation ? (
         <div className="space-y-2">
           <p className="text-sm leading-relaxed whitespace-pre-wrap">{stop.presentation}</p>
@@ -103,6 +166,36 @@ function StopDetails({ stop, onSave }: { stop: Stop; onSave: (patch: Partial<Sto
         <button className="btn-gold w-full" disabled={gen} onClick={makePresentation}>
           {gen ? '⏳ Scrivo la presentazione…' : '✨ Crea presentazione e audioguida'}
         </button>
+      )}
+
+      {/* 🏛️ Guida interna punto per punto */}
+      {g && cur ? (
+        <div className="rounded-2xl border-2 border-oro/60 p-3 space-y-2 bg-oro-tenue/20 dark:bg-oro/10">
+          <div className="flex items-center justify-between">
+            <p className="font-display font-semibold">🏛️ Guida interna · {pt + 1}/{g.length}</p>
+            <button className="btn-ghost !min-h-[32px] !py-0.5 !px-2 text-xs" disabled={genGuide} onClick={makeGuide}>{genGuide ? '⏳' : '🔄'}</button>
+          </div>
+          <p className="font-semibold">{cur.name}</p>
+          <GuideImage subject={`${stop.title} ${cur.name}`} alt={cur.name} />
+          <p className="text-sm leading-relaxed whitespace-pre-wrap">{cur.text}</p>
+          <AudioControls
+            text={cur.text}
+            audioKey={`stop-${stop.id}-int-${pt}`}
+            onPrev={pt > 0 ? () => setPt(pt - 1) : undefined}
+            onNext={pt < g.length - 1 ? () => setPt(pt + 1) : undefined}
+          />
+          <div className="grid grid-cols-2 gap-2">
+            <button className="btn-secondary !min-h-[40px] !py-1.5" disabled={pt === 0} onClick={() => setPt(pt - 1)}>⏮ Indietro</button>
+            <button className="btn-secondary !min-h-[40px] !py-1.5" disabled={pt >= g.length - 1} onClick={() => setPt(pt + 1)}>Avanti ⏭</button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-1">
+          <button className="btn-secondary w-full" disabled={genGuide} onClick={makeGuide}>
+            {genGuide ? '⏳ Preparo la guida interna…' : '🏛️ Crea guida interna (audio punto per punto)'}
+          </button>
+          {guideErr && <p className="text-xs text-red-700 dark:text-red-300" role="alert">{guideErr}</p>}
+        </div>
       )}
     </div>
   );

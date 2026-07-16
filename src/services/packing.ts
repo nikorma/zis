@@ -38,6 +38,8 @@ export interface PackingResult {
   items: PackingItem[];
   tips: string[];
   laundry: boolean;
+  /** capi ridotti/eliminati per far entrare tutto */ reductions: string[];
+  /** true se anche dopo le riduzioni lo spazio non basta */ overCapacity: boolean;
   /** litri utilizzabili del bagaglio scelto */ capacityL: number;
   /** litri stimati occupati dalla lista finale */ usedL: number;
 }
@@ -196,17 +198,13 @@ export function buildPackingList(input: PackingInput, climate: ClimateEstimate |
   for (let i = it.length - 1; i >= 0; i--) if (it[i].qty === 0) { reductions.push(it[i].name + ' (eliminato)'); it.splice(i, 1); }
 
   const usedL = Math.round(used());
-  if (reductions.length > 0) {
-    const counts: Record<string, number> = {};
-    for (const r of reductions) counts[r] = (counts[r] ?? 0) + 1;
-    const summary = Object.entries(counts).map(([n, c]) => (c > 1 ? `${n} (−${c})` : `${n} (−1)`)).join(', ');
-    tips.push(`🧳 Il tuo ${input.luggage === 'zaino' ? 'zaino (~' + capacityL + ' L)' : 'bagaglio (~' + capacityL + ' L)'} non basta per la lista ideale: ho ridotto ${summary}. Trucchi: indossa i capi più ingombranti in viaggio e prevedi un lavaggio in più.`);
-  } else {
+  const counts: Record<string, number> = {};
+  for (const r of reductions) counts[r] = (counts[r] ?? 0) + 1;
+  const reductionList = Object.entries(counts).map(([n, c]) => `${n} −${c}`);
+  const overCapacity = used() > usable;
+  if (reductions.length === 0) {
     tips.push(`🧳 Occupazione stimata: ~${usedL} L su ${capacityL} L disponibili — ci sta tutto${usedL < usable * 0.7 ? ', con spazio per i souvenir' : ''}.`);
   }
-  if (used() > usable) {
-    tips.push('⚠️ Anche riducendo al minimo, lo spazio è stretto: valuta un bagaglio più grande o il lavaggio frequente.');
-  }
 
-  return { days, climate, items: it, tips, laundry, capacityL, usedL };
+  return { days, climate, items: it, tips, laundry, reductions: reductionList, overCapacity, capacityL, usedL };
 }

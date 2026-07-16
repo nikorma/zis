@@ -6,7 +6,7 @@ import { uid } from '../lib/itinerary';
 import type { Day, Stop } from '../types';
 import { firebaseReady, getSavedGroupId, addGroupStop } from '../services/group';
 
-interface PlanStop { title: string; time?: string; durationMinutes?: number; description?: string; address?: string }
+interface PlanStop { title: string; time?: string; durationMinutes?: number; description?: string; address?: string; paid?: boolean | null; officialSite?: string | null }
 interface PlanDay { date: string; title: string; stops: PlanStop[] }
 
 export default function PlannerPage() {
@@ -73,7 +73,9 @@ export default function PlannerPage() {
         time: s.time,
         durationMinutes: s.durationMinutes,
         description: s.description,
-        address: s.address,
+        address: s.address || (destPicked?.name ?? dest),
+        paid: typeof s.paid === 'boolean' ? s.paid : undefined,
+        officialSite: s.officialSite || undefined,
         visited: false,
       })),
     }));

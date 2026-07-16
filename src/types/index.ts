@@ -100,6 +100,8 @@ export interface Stop {
   ticketUrl?: string;
   notes?: string;
   presentation?: string;       // presentazione "da guida" (generata o scritta a mano)
+  paid?: boolean;              // richiede biglietto? (true/false; assente = non noto)
+  interiorGuide?: { name: string; text: string }[]; // guida interna punto per punto
   visited: boolean;
   transit?: TransitHint;       // spostamento DALLA tappa precedente
 }

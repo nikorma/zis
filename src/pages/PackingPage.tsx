@@ -126,6 +126,19 @@ export default function PackingPage() {
 
       {result && (
         <>
+          {(result.reductions.length > 0 || result.overCapacity) && (
+            <section className={`card border-2 ${result.overCapacity ? 'border-red-500 bg-red-50 dark:bg-red-900/25' : 'border-oro bg-oro-tenue/30 dark:bg-oro/10'} space-y-1`} role="alert">
+              <p className="font-display font-bold text-lg">{result.overCapacity ? '🚨 Il bagaglio NON basta!' : '⚠️ Bagaglio pieno: ho ridotto la lista'}</p>
+              {result.reductions.length > 0 && (
+                <p className="text-sm">Per farci stare tutto ho tolto: <strong>{result.reductions.join(' · ')}</strong>.</p>
+              )}
+              <p className="text-sm">
+                {result.overCapacity
+                  ? 'Anche al minimo indispensabile lo spazio non è sufficiente: scegli un bagaglio più grande o riduci i giorni di autonomia (lavaggio più frequente).'
+                  : 'Trucco da viaggiatore: indossa i capi più ingombranti durante il viaggio.'}
+              </p>
+            </section>
+          )}
           <section className="card space-y-2">
             <div className="flex items-baseline justify-between text-sm">
               <span className="font-semibold">🧳 Spazio nel bagaglio</span>
