@@ -22,8 +22,15 @@ export default function PackingPage() {
   useEffect(() => {
     try {
       const s = JSON.parse(localStorage.getItem(LS) || 'null') as Saved | null;
-      if (s) { setInput(s.input); setResult(s.result); setChecked(new Set(s.checked)); }
-    } catch { /* ignora */ }
+      // Migrazione: i salvataggi creati prima della capienza-bagaglio non hanno
+      // reductions/capacityL → vanno scartati (altrimenti la pagina va in errore).
+      const valid = s && s.result && Array.isArray(s.result.items)
+        && Array.isArray((s.result as PackingResult).reductions)
+        && typeof (s.result as PackingResult).capacityL === 'number'
+        && s.result.items.every((i) => typeof (i as { vol?: unknown }).vol === 'number');
+      if (valid && s) { setInput(s.input); setResult(s.result); setChecked(new Set(s.checked)); }
+      else if (s) localStorage.removeItem(LS);
+    } catch { localStorage.removeItem(LS); }
   }, []);
 
   const persist = (inp: PackingInput, res: PackingResult, chk: Set<string>) =>
@@ -126,11 +133,11 @@ export default function PackingPage() {
 
       {result && (
         <>
-          {(result.reductions.length > 0 || result.overCapacity) && (
+          {(((result.reductions?.length ?? 0) > 0) || result.overCapacity) && (
             <section className={`card border-2 ${result.overCapacity ? 'border-red-500 bg-red-50 dark:bg-red-900/25' : 'border-oro bg-oro-tenue/30 dark:bg-oro/10'} space-y-1`} role="alert">
               <p className="font-display font-bold text-lg">{result.overCapacity ? '🚨 Il bagaglio NON basta!' : '⚠️ Bagaglio pieno: ho ridotto la lista'}</p>
-              {result.reductions.length > 0 && (
-                <p className="text-sm">Per farci stare tutto ho tolto: <strong>{result.reductions.join(' · ')}</strong>.</p>
+              {(result.reductions?.length ?? 0) > 0 && (
+                <p className="text-sm">Per farci stare tutto ho tolto: <strong>{(result.reductions ?? []).join(' · ')}</strong>.</p>
               )}
               <p className="text-sm">
                 {result.overCapacity
