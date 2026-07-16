@@ -5,6 +5,7 @@ import GuideImage from '../components/GuideImage';
 import { googleMapsDirectionsUrl, type TravelMode } from '../lib/geo';
 import { generatePresentation } from '../services/group';
 import { geocodeOne, generateInteriorGuide } from '../services/guidegen';
+import WorkingScreen from '../components/WorkingScreen';
 import { useApp } from '../state/AppStore';
 import * as it from '../lib/itinerary';
 import type { Day, Stop } from '../types';
@@ -100,6 +101,19 @@ function StopDetails({ stop, onSave }: { stop: Stop; onSave: (patch: Partial<Sto
 
   return (
     <div className="mt-3 space-y-3 border-t border-dashed border-[#E4D7BC] dark:border-[#33406B] pt-3">
+      {genGuide && (
+        <WorkingScreen
+          title="Preparo la guida interna…"
+          messages={[
+            'Intervisto il custode del monumento… 🗝️',
+            'Conto le sale per non perderne una… 🚪',
+            'Cerco i dettagli che nessuno nota… 🔍',
+            'Provo l\u2019eco per l\u2019audioguida… 🎙️',
+            'Chiedo alle statue di stare ferme per la foto 🗿',
+            'Sistemo gli aneddoti nei punti giusti ✨',
+          ]}
+        />
+      )}
       <GuideImage subject={`${stop.title}${stop.address ? ' ' + stop.address : ''}`} alt={stop.title} />
       {stop.description && <p className="text-sm leading-relaxed">{stop.description}</p>}
 

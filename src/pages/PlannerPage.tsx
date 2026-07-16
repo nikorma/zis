@@ -5,6 +5,7 @@ import PlaceSearch, { type FoundPlace } from '../components/PlaceSearch';
 import { uid } from '../lib/itinerary';
 import type { Day, Stop } from '../types';
 import { firebaseReady, getSavedGroupId, addGroupStop } from '../services/group';
+import WorkingScreen from '../components/WorkingScreen';
 
 interface PlanStop { title: string; time?: string; durationMinutes?: number; description?: string; address?: string; paid?: boolean | null; officialSite?: string | null }
 interface PlanDay { date: string; title: string; stops: PlanStop[] }
@@ -119,6 +120,7 @@ export default function PlannerPage() {
 
   return (
     <div className="max-w-xl mx-auto p-4 space-y-4">
+      {busy && !plan && <WorkingScreen />}
       <h1 className="page-title">Pianifica un viaggio</h1>
       <div className="azulejo-band" aria-hidden />
       <p className="text-sm opacity-80">Qualsiasi destinazione: dimmi periodo, orari e luogo — al resto pensa la guida. 🌍</p>
