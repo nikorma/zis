@@ -88,21 +88,58 @@ export interface FoodPlace {
 
 const CHEAP = /pizzer|trattor|oster|taverna|kebab|paninotec|piadin|rosticc|friggitor|tavola calda|street/i;
 
-/** Ristoranti vicino a un punto (Nominatim, raggio ~1.2 km), ordinati per distanza. */
+/** Ristoranti vicino a un punto (raggio ~1.2 km), ordinati per distanza.
+ *  Motore principale: Overpass API (OpenStreetMap), fatto apposta per i locali
+ *  in zona; riserva: Nominatim. */
 export async function findRestaurants(center: LatLng, budgetAlto: boolean): Promise<FoodPlace[]> {
-  const d = 0.011; // ~1.2 km
-  const viewbox = `${center.lng - d},${center.lat + d},${center.lng + d},${center.lat - d}`;
   const dist = (a: LatLng, b: LatLng) => {
     const R = 6371000, toR = Math.PI / 180;
     const dLat = (b.lat - a.lat) * toR, dLng = (b.lng - a.lng) * toR;
     const x = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * toR) * Math.cos(b.lat * toR) * Math.sin(dLng / 2) ** 2;
     return Math.round(2 * R * Math.asin(Math.sqrt(x)));
   };
+
+  let list: FoodPlace[] = [];
+
+  // --- Overpass ---
   try {
-    const rs = await nominatim('ristorante', `&bounded=1&viewbox=${viewbox}&limit=15`);
-    let list: FoodPlace[] = rs
-      .filter((r) => r.class === 'amenity')
-      .map((r) => {
+    const q = `[out:json][timeout:12];
+(
+  node(around:1200,${center.lat},${center.lng})["amenity"~"^(restaurant|fast_food|food_court)$"]["name"];
+  way(around:1200,${center.lat},${center.lng})["amenity"~"^(restaurant|fast_food|food_court)$"]["name"];
+);
+out center 40;`;
+    const res = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'data=' + encodeURIComponent(q),
+    });
+    if (res.ok) {
+      const j = await res.json();
+      list = (j.elements ?? []).map((e: any) => {
+        const t = e.tags ?? {};
+        const coords = { lat: e.lat ?? e.center?.lat, lng: e.lon ?? e.center?.lon };
+        const street = [t['addr:street'], t['addr:housenumber']].filter(Boolean).join(' ');
+        return {
+          name: t.name,
+          address: street || t['addr:city'] || '',
+          coords,
+          meters: dist(center, coords),
+          cuisine: t.cuisine ? String(t.cuisine).replace(/;/g, ', ').replace(/_/g, ' ') : undefined,
+          phone: t.phone || t['contact:phone'] || undefined,
+          website: t.website || t['contact:website'] || undefined,
+        } as FoodPlace;
+      }).filter((p: FoodPlace) => p.name && p.coords.lat);
+    }
+  } catch { /* si passa alla riserva */ }
+
+  // --- Riserva: Nominatim ---
+  if (list.length === 0) {
+    try {
+      const d = 0.011;
+      const viewbox = `${center.lng - d},${center.lat + d},${center.lng + d},${center.lat - d}`;
+      const rs = await nominatim('ristorante', `&bounded=1&viewbox=${viewbox}&limit=15`);
+      list = rs.filter((r) => r.class === 'amenity').map((r) => {
         const t = r.extratags || {};
         const coords = { lat: Number(r.lat), lng: Number(r.lon) };
         return {
@@ -113,19 +150,17 @@ export async function findRestaurants(center: LatLng, budgetAlto: boolean): Prom
           cuisine: t.cuisine ? String(t.cuisine).replace(/;/g, ', ').replace(/_/g, ' ') : undefined,
           phone: t.phone || t['contact:phone'] || undefined,
           website: t.website || t['contact:website'] || undefined,
-        };
-      })
-      .filter((p) => p.name);
-    // budget: senza prezzi ufficiali, usiamo il tipo di locale come indizio
-    if (!budgetAlto) {
-      const cheap = list.filter((p) => CHEAP.test(p.name) || CHEAP.test(p.cuisine ?? ''));
-      if (cheap.length >= 3) list = cheap;
-    }
-    list.sort((a, b) => a.meters - b.meters);
-    return list.slice(0, 8);
-  } catch {
-    return [];
+        } as FoodPlace;
+      }).filter((p) => p.name);
+    } catch { /* pazienza */ }
   }
+
+  if (!budgetAlto) {
+    const cheap = list.filter((p) => CHEAP.test(p.name) || CHEAP.test(p.cuisine ?? ''));
+    if (cheap.length >= 3) list = cheap;
+  }
+  list.sort((a, b) => a.meters - b.meters);
+  return list.slice(0, 8);
 }
 
 export interface GuidePoint { name: string; text: string }

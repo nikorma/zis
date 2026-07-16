@@ -302,6 +302,10 @@ function StopDetails({ stop, date, onSave }: { stop: Stop; date: string; onSave:
   );
 }
 
+function wakeTime(): string | null {
+  try { return JSON.parse(localStorage.getItem('zaino-orari-v1') || '{}').wake ?? null; } catch { return null; }
+}
+
 export default function ItineraryPage() {
   const { data, update } = useApp();
   const [editing, setEditing] = useState<string | null>(null);
@@ -335,7 +339,11 @@ export default function ItineraryPage() {
               aria-label="Elimina tutto l'itinerario"
               onClick={() => {
                 if (confirm(`Eliminare TUTTO l'itinerario (${data.days.length} giornate)? Biglietti e impostazioni non vengono toccati.`) && confirm('Sicuro sicuro? Non si può annullare. 🎒')) {
-                  update({ days: [] });
+                  update({
+                    days: [],
+                    trips: data.trips.filter((t) => t.id !== data.activeTripId),
+                    activeTripId: undefined,
+                  });
                 }
               }}
             >🗑️ Elimina itinerario</button>
@@ -360,6 +368,9 @@ export default function ItineraryPage() {
                   {new Date(day.date + 'T12:00').toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}
                 </h2>
                 <p className="text-sm opacity-80">{day.title}</p>
+                {wakeTime() && day.stops.length > 0 && (
+                  <p className="text-xs opacity-60">⏰ Sveglia consigliata: {wakeTime()} <span className="opacity-70">(impostala sul telefono: le app web non possono farlo da sole)</span></p>
+                )}
               </div>
               <div className="flex gap-1">
                 <Link to={`/mappa/${day.id}`} className="btn-ghost !min-h-[40px] !py-1.5" aria-label="Mappa della giornata">🗺️</Link>

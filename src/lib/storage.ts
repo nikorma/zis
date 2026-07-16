@@ -23,6 +23,8 @@ export function emptyData(): AppData {
   return {
     version: 1,
     days: [],
+    trips: [],
+    activeTripId: undefined,
     tickets: {},
     favorites: [],
     settings: { ...DEFAULT_SETTINGS },

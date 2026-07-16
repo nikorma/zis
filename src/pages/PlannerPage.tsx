@@ -3,12 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../state/AppStore';
 import PlaceSearch, { type FoundPlace } from '../components/PlaceSearch';
 import { uid } from '../lib/itinerary';
-import type { Day, Stop } from '../types';
+import type { Day, Stop, Trip } from '../types';
 import { firebaseReady, getSavedGroupId, addGroupStop } from '../services/group';
 import WorkingScreen from '../components/WorkingScreen';
 
 interface PlanStop { title: string; time?: string; durationMinutes?: number; description?: string; address?: string; paid?: boolean | null; officialSite?: string | null }
 interface PlanDay { date: string; title: string; stops: PlanStop[] }
+
+const MEAL_LS = 'zaino-orari-v1';
+interface MealPrefs { wake: string; breakfast: string; lunch: string; dinner: string }
+const DEFAULT_MEALS: MealPrefs = { wake: '07:30', breakfast: '08:00', lunch: '13:00', dinner: '20:30' };
+function loadMeals(): MealPrefs {
+  try { return { ...DEFAULT_MEALS, ...JSON.parse(localStorage.getItem(MEAL_LS) || '{}') }; } catch { return DEFAULT_MEALS; }
+}
 
 export default function PlannerPage() {
   const { data, update } = useApp();
@@ -28,6 +35,7 @@ export default function PlannerPage() {
   const [siesta, setSiesta] = useState<boolean | null>(null);
   const [lunchOut, setLunchOut] = useState<boolean | null>(null);
   const [dinnerOut, setDinnerOut] = useState<boolean | null>(null);
+  const [meals, setMeals] = useState<MealPrefs>(loadMeals());
 
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -37,6 +45,7 @@ export default function PlannerPage() {
   const canGenerate = siesta !== null && lunchOut !== null && dinnerOut !== null;
 
   const generate = async () => {
+    localStorage.setItem(MEAL_LS, JSON.stringify(meals));
     setBusy(true); setErr(null); setPlan(null);
     try {
       const res = await fetch('/api/planner', {
@@ -47,11 +56,23 @@ export default function PlannerPage() {
           startDate: start, endDate: end,
           checkinTime: checkin, checkoutTime: checkout,
           afternoonBreak: siesta, lunchOut, dinnerOut, notes,
+          mealTimes: meals,
         }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Generazione non riuscita');
-      setPlan(json.days as PlanDay[]);
+      const generated = json.days as PlanDay[];
+      setPlan(generated);
+      // 💾 Salvataggio automatico tra "I miei viaggi" (e diventa l'itinerario aperto)
+      const days = toDaysFrom(generated);
+      const trip: Trip = {
+        id: uid('trip'),
+        name: `${destPicked?.name ?? dest} · ${start}`,
+        destination: destPicked?.name ?? dest,
+        days,
+        createdAt: new Date().toISOString(),
+      };
+      update({ trips: [...data.trips, trip], days, activeTripId: trip.id });
       setStep(3);
     } catch (e) {
       setErr(
@@ -63,7 +84,7 @@ export default function PlannerPage() {
     setBusy(false);
   };
 
-  const toDays = (p: PlanDay[]): Day[] =>
+  const toDaysFrom = (p: PlanDay[]): Day[] =>
     p.map((d) => ({
       id: uid('day'),
       date: d.date,
@@ -81,12 +102,7 @@ export default function PlannerPage() {
       })),
     }));
 
-  const save = (mode: 'replace' | 'append') => {
-    if (!plan) return;
-    const days = toDays(plan);
-    update({ days: mode === 'replace' ? days : [...data.days, ...days].sort((a, b) => a.date.localeCompare(b.date)) });
-    nav('/itinerario');
-  };
+
 
   const shareText = () => {
     if (!plan) return;
@@ -149,7 +165,16 @@ export default function PlannerPage() {
 
       {step === 2 && (
         <section className="card space-y-4">
-          <h2 className="font-display text-lg">2 · Due domande prima di creare l\u2019itinerario</h2>
+          <h2 className="font-display text-lg">2 · I tuoi orari e due domande</h2>
+          <div className="space-y-1">
+            <p className="font-medium">🕰️ I tuoi orari abituali (li ricordo per i prossimi viaggi):</p>
+            <div className="grid grid-cols-2 gap-2">
+              <label className="label">⏰ Sveglia<input className="input" type="time" value={meals.wake} onChange={(e) => setMeals({ ...meals, wake: e.target.value })} /></label>
+              <label className="label">☕ Colazione<input className="input" type="time" value={meals.breakfast} onChange={(e) => setMeals({ ...meals, breakfast: e.target.value })} /></label>
+              <label className="label">🍝 Pranzo<input className="input" type="time" value={meals.lunch} onChange={(e) => setMeals({ ...meals, lunch: e.target.value })} /></label>
+              <label className="label">🍷 Cena<input className="input" type="time" value={meals.dinner} onChange={(e) => setMeals({ ...meals, dinner: e.target.value })} /></label>
+            </div>
+          </div>
           <div className="space-y-2">
             <p className="font-medium">🛌 Il giro dev\u2019essere senza sosta pomeridiana?</p>
             <YesNo value={siesta === null ? null : !siesta} onChange={(v) => setSiesta(!v)} yes="Sì, tutto di fila" no="No, voglio la pausa" />
@@ -186,12 +211,11 @@ export default function PlannerPage() {
             ))}
           </section>
           <section className="card space-y-2">
-            <h2 className="font-display text-lg">💾 Salva e condividi</h2>
+            <p className="badge-ok !flex w-full justify-center">✅ Salvato automaticamente in "I miei viaggi" (lo trovi nella Home)</p>
             <div className="grid grid-cols-2 gap-2">
-              <button className="btn-primary" onClick={() => save('append')}>➕ Aggiungi al mio itinerario</button>
-              <button className="btn-secondary" onClick={() => { if (confirm('Sostituire tutto l\u2019itinerario attuale?')) save('replace'); }}>♻️ Sostituisci itinerario</button>
+              <button className="btn-primary" onClick={() => nav('/itinerario')}>🗓️ Apri l\u2019itinerario</button>
               <button className="btn-secondary" onClick={shareText}>📤 Condividi (WhatsApp…)</button>
-              <button className="btn-secondary" disabled={busy} onClick={sendToGroup}>👥 Invia al Gruppo</button>
+              <button className="btn-secondary col-span-2" disabled={busy} onClick={sendToGroup}>👥 Invia al Gruppo</button>
             </div>
             <button className="btn-ghost w-full" onClick={() => { setPlan(null); setStep(2); }}>🔄 Rigenera con altre scelte</button>
             <p className="text-xs opacity-60">⚠️ Orari di apertura e prezzi non sono garantiti: l\u2019itinerario è una proposta da verificare sui siti ufficiali.</p>

@@ -86,11 +86,40 @@ export default function HomePage() {
         </div>
       )}
 
+      {data.trips.length > 0 && (
+        <section className="card space-y-2">
+          <h2 className="font-display text-lg">🗺️ I miei viaggi</h2>
+          {data.trips.map((t) => {
+            const active = t.id === data.activeTripId;
+            const dates = t.days.length
+              ? `${new Date(t.days[0].date + 'T12:00').toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })} → ${new Date(t.days[t.days.length - 1].date + 'T12:00').toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}`
+              : 'vuoto';
+            return (
+              <div key={t.id} className={`flex items-center gap-2 rounded-xl p-2 ${active ? 'bg-crema dark:bg-[#141C33]' : ''}`}>
+                <button className="flex-1 text-left" onClick={() => update({ days: t.days, activeTripId: t.id })}>
+                  <span className="font-semibold text-sm">🧭 {t.name}</span>
+                  <span className="block text-xs opacity-60">{t.days.length} giornate · {dates}</span>
+                </button>
+                {active
+                  ? <span className="badge-ok shrink-0">Aperto</span>
+                  : <button className="btn-secondary !min-h-[36px] !py-1 text-sm shrink-0" onClick={() => update({ days: t.days, activeTripId: t.id })}>Apri</button>}
+                <button className="btn-ghost !min-h-[36px] !py-1 !px-2 shrink-0" aria-label="Elimina viaggio" onClick={() => {
+                  if (confirm(`Eliminare il viaggio "${t.name}"?`)) {
+                    const trips = data.trips.filter((x) => x.id !== t.id);
+                    update(active ? { trips, days: [], activeTripId: undefined } : { trips });
+                  }
+                }}>🗑️</button>
+              </div>
+            );
+          })}
+        </section>
+      )}
+
       {data.days.length === 0 ? (
         <section className="card space-y-3 text-center">
           <p className="text-4xl" aria-hidden>🎒</p>
           <h2 className="font-display font-black text-xl">Il tuo prossimo viaggio parte da qui</h2>
-          <p className="text-sm opacity-70">Crea l\u2019itinerario in un minuto con il planner, oppure costruiscilo a mano tappa per tappa.</p>
+          <p className="text-sm opacity-70">Crea l\u2019itinerario in un minuto con il planner: verrà salvato qui automaticamente.</p>
         </section>
       ) : (
       <section className="card space-y-2">

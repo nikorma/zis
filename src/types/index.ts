@@ -107,6 +107,14 @@ export interface Stop {
   transit?: TransitHint;       // spostamento DALLA tappa precedente
 }
 
+export interface Trip {
+  id: string;
+  name: string;
+  destination?: string;
+  days: Day[];
+  createdAt: string;
+}
+
 export interface Day {
   id: string;
   date: string;                // "YYYY-MM-DD"
@@ -154,7 +162,9 @@ export interface AiUsageEntry {
 
 export interface AppData {
   version: number;
-  days: Day[];
+  days: Day[];                     // itinerario ATTIVO (specchio del viaggio aperto)
+  trips: Trip[];                   // tutti i viaggi salvati
+  activeTripId?: string;
   tickets: Record<string, TicketState>;
   favorites: string[];             // placeId preferiti
   settings: Settings;

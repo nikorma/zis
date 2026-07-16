@@ -27,8 +27,9 @@ export default async function handler(req, res) {
 
   const {
     destination, startDate, endDate, checkinTime, checkoutTime,
-    afternoonBreak, lunchOut, dinnerOut, notes,
+    afternoonBreak, lunchOut, dinnerOut, notes, mealTimes,
   } = req.body || {};
+  const mt = { wake: '07:30', breakfast: '08:00', lunch: '13:00', dinner: '20:30', ...(mealTimes || {}) };
   if (!destination || !startDate || !endDate) {
     return res.status(400).json({ error: 'Servono destinazione e date.' });
   }
@@ -39,8 +40,10 @@ Regole:
 - Una voce in "days" per OGNI giorno dal check-in al check-out inclusi.
 - Il primo giorno inizia DOPO l'orario di check-in; l'ultimo finisce PRIMA del check-out.
 - ${afternoonBreak ? 'Inserisci ogni giorno una pausa/riposo tra le 14 e le 17 (tappa "Pausa pomeridiana").' : 'Giornate continue, SENZA pausa pomeridiana.'}
-- ${lunchOut ? 'Includi ogni giorno una tappa pranzo in zona (indica il tipo di locale, non inventare nomi se non sei certo).' : 'NON pianificare pranzi fuori.'}
-- ${dinnerOut ? 'Includi ogni giorno una tappa cena.' : 'NON pianificare cene fuori.'}
+- ORARI DELL'UTENTE (rispettali con precisione): sveglia ${mt.wake}, colazione ${mt.breakfast}, pranzo ${mt.lunch}, cena ${mt.dinner}.
+- La prima tappa di ogni giornata inizia circa 45 minuti dopo la colazione (mai prima).
+- ${lunchOut ? `Includi ogni giorno una tappa PRANZO alle ${mt.lunch} in punto (indica il tipo di locale, non inventare nomi se non sei certo).` : 'NON pianificare pranzi fuori, ma lascia libera la fascia del pranzo.'}
+- ${dinnerOut ? `Includi ogni giorno una tappa CENA alle ${mt.dinner} in punto.` : 'NON pianificare cene fuori.'}
 - Tappe realistiche e vicine tra loro, ordine geografico sensato, 4-7 tappe al giorno.
 - "paid": true se serve un biglietto d'ingresso, false se gratuito; NON inventare mai prezzi od orari.
 - "officialSite": SOLO il dominio ufficiale se ne sei assolutamente certo (es. museo molto famoso); in dubbio metti null.

@@ -27,7 +27,14 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   const store = useMemo<Store>(
     () => ({
       data,
-      update: (patch) => setData((d) => ({ ...d, ...patch })),
+      update: (patch) => setData((d) => {
+        const next = { ...d, ...patch };
+        // Salvataggio automatico: l'itinerario attivo resta sincronizzato col viaggio salvato
+        if (patch.days && next.activeTripId) {
+          next.trips = next.trips.map((t) => (t.id === next.activeTripId ? { ...t, days: patch.days as typeof t.days } : t));
+        }
+        return next;
+      }),
       replaceAll: (next) => setData(next),
     }),
     [data]
