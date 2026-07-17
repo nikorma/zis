@@ -22,7 +22,7 @@ export const firebaseConfig = {
   projectId: "zaino-gruppo",
   storageBucket: "zaino-gruppo.firebasestorage.app",
   messagingSenderId: "17308652440",
-  appId: "1:17308652440:web:3de77015b5e02150cc91ed"
+  appId: "1:17308652440:web:3de77015b5e02150cc91ed",
 };
 
 export const isFirebaseConfigured = !firebaseConfig.apiKey.includes('INCOLLA');
