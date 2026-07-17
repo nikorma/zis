@@ -101,20 +101,23 @@ export async function findRestaurants(center: LatLng, budgetAlto: boolean): Prom
 
   let list: FoodPlace[] = [];
 
-  // --- Overpass ---
-  try {
-    const q = `[out:json][timeout:12];
+  // --- Overpass (più mirror: se uno è pieno si passa al successivo) ---
+  const q = `[out:json][timeout:10];
 (
-  node(around:1200,${center.lat},${center.lng})["amenity"~"^(restaurant|fast_food|food_court)$"]["name"];
-  way(around:1200,${center.lat},${center.lng})["amenity"~"^(restaurant|fast_food|food_court)$"]["name"];
+  node(around:1500,${center.lat},${center.lng})["amenity"~"^(restaurant|fast_food|food_court|cafe)$"]["name"];
+  way(around:1500,${center.lat},${center.lng})["amenity"~"^(restaurant|fast_food|food_court|cafe)$"]["name"];
 );
 out center 40;`;
-    const res = await fetch('https://overpass-api.de/api/interpreter', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: 'data=' + encodeURIComponent(q),
-    });
-    if (res.ok) {
+  const MIRRORS = [
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter',
+    'https://overpass.private.coffee/api/interpreter',
+  ];
+  for (const base of MIRRORS) {
+    if (list.length > 0) break;
+    try {
+      const res = await fetch(`${base}?data=${encodeURIComponent(q)}`);
+      if (res.ok) {
       const j = await res.json();
       list = (j.elements ?? []).map((e: any) => {
         const t = e.tags ?? {};
@@ -130,8 +133,9 @@ out center 40;`;
           website: t.website || t['contact:website'] || undefined,
         } as FoodPlace;
       }).filter((p: FoodPlace) => p.name && p.coords.lat);
-    }
-  } catch { /* si passa alla riserva */ }
+      }
+    } catch { /* mirror successivo */ }
+  }
 
   // --- Riserva: Nominatim ---
   if (list.length === 0) {

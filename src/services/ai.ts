@@ -53,7 +53,7 @@ export async function askGuide(
     return { ok: false, error: `Limite giornaliero di ${dailyLimit} richieste raggiunto. Riprova domani o alza il limite nel pannello admin.` };
   }
   if (!navigator.onLine) {
-    return { ok: false, error: 'Sei offline: l\u2019assistente richiede internet. Le schede dei luoghi restano disponibili offline.' };
+    return { ok: false, error: 'Sei offline: l’assistente richiede internet. Le schede dei luoghi restano disponibili offline.' };
   }
   try {
     const res = await fetch('/api/ai', {
@@ -83,7 +83,7 @@ export async function askGuide(
     });
     return { ok: true, answer, cached: false };
   } catch {
-    const msg = 'Connessione al servizio IA non riuscita. In sviluppo locale l\u2019endpoint /api/ai è disponibile solo dopo la pubblicazione (vedi README).';
+    const msg = 'Connessione al servizio IA non riuscita. In sviluppo locale l’endpoint /api/ai è disponibile solo dopo la pubblicazione (vedi README).';
     update({ aiUsage: [...data.aiUsage, { ts: Date.now(), promptTokens: 0, completionTokens: 0, cached: false, ok: false, error: msg }] });
     return { ok: false, error: msg };
   }

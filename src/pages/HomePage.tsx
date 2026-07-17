@@ -119,12 +119,12 @@ export default function HomePage() {
         <section className="card space-y-3 text-center">
           <p className="text-4xl" aria-hidden>🎒</p>
           <h2 className="font-display font-black text-xl">Il tuo prossimo viaggio parte da qui</h2>
-          <p className="text-sm opacity-70">Crea l\u2019itinerario in un minuto con il planner: verrà salvato qui automaticamente.</p>
+          <p className="text-sm opacity-70">Crea l’itinerario in un minuto con il planner: verrà salvato qui automaticamente.</p>
         </section>
       ) : (
       <section className="card space-y-2">
         {day && <p className="text-sm font-semibold">{day.title}</p>}
-        {!day && <p className="text-sm opacity-70">Oggi non ci sono tappe in programma: goditi la giornata o apri l\u2019itinerario.</p>}
+        {!day && <p className="text-sm opacity-70">Oggi non ci sono tappe in programma: goditi la giornata o apri l’itinerario.</p>}
         {day && !next && <p className="text-sm opacity-70">Tutte le tappe di oggi sono state visitate. 🎉</p>}
         <div className="grid grid-cols-2 gap-2 pt-2">
           {data.days.length === 0 ? (
@@ -154,7 +154,7 @@ export default function HomePage() {
           {geo.errorMessage && <p className="text-sm text-red-700 dark:text-red-300" role="alert">{geo.errorMessage}</p>}
           {geo.status === 'stale' && (
             <p className="text-sm badge-warn" role="status">
-              ⚠️ Posizione non aggiornata: il browser sospende il GPS in background o a schermo spento. Riporta l\u2019app in primo piano.
+              ⚠️ Posizione non aggiornata: il browser sospende il GPS in background o a schermo spento. Riporta l’app in primo piano.
             </p>
           )}
           {arrivedMsg && (
@@ -216,7 +216,7 @@ export default function HomePage() {
             </a>
           )}
           <p className="text-xs opacity-60">
-            La posizione resta sul tuo dispositivo e non viene inviata a nessun server. I browser possono sospendere il GPS quando l\u2019app è in background o lo schermo è spento: per la navigazione continua tieni lo schermo acceso o usa "Portami qui".
+            La posizione resta sul tuo dispositivo e non viene inviata a nessun server. I browser possono sospendere il GPS quando l’app è in background o lo schermo è spento: per la navigazione continua tieni lo schermo acceso o usa "Portami qui".
           </p>
         </section>
       )}

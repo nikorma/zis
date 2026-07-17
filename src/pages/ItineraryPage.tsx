@@ -138,7 +138,7 @@ function StopDetails({ stop, date, onSave }: { stop: Stop; date: string; onSave:
             'Intervisto il custode del monumento… 🗝️',
             'Conto le sale per non perderne una… 🚪',
             'Cerco i dettagli che nessuno nota… 🔍',
-            'Provo l\u2019eco per l\u2019audioguida… 🎙️',
+            'Provo l’eco per l’audioguida… 🎙️',
             'Chiedo alle statue di stare ferme per la foto 🗿',
             'Sistemo gli aneddoti nei punti giusti ✨',
           ]}
@@ -181,7 +181,16 @@ function StopDetails({ stop, date, onSave }: { stop: Stop; date: string; onSave:
       {isFood && Array.isArray(finder) && (
         <div className="space-y-2">
           <p className="font-semibold text-sm">🍽️ Vicino a questa tappa ({finder.length}):</p>
-          {finder.length === 0 && <p className="text-sm opacity-70">Nessun locale mappato qui vicino: prova la ricerca su Google Maps.</p>}
+          {finder.length === 0 && (
+            <div className="text-sm opacity-80 space-y-2">
+              <p>😕 Non ho trovato locali mappati qui vicino (o il servizio era momentaneamente pieno).</p>
+              <div className="flex gap-2">
+                <button className="btn-secondary !min-h-[38px] !py-1 text-sm" onClick={() => setFinder('ask')}>🔄 Riprova</button>
+                <a className="btn-secondary !min-h-[38px] !py-1 text-sm" target="_blank" rel="noreferrer"
+                   href={`https://www.google.com/maps/search/ristoranti/@${stop.coords?.lat},${stop.coords?.lng},16z`}>🗺️ Apri su Google Maps</a>
+              </div>
+            </div>
+          )}
           {finder.map((f) => (
             <div key={f.name + f.meters} className="rounded-xl bg-crema dark:bg-[#141C33] p-3">
               <div className="flex items-baseline justify-between gap-2">

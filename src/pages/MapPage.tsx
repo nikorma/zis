@@ -83,7 +83,7 @@ export default function MapPage() {
       <section className="card">
         <h2 className="font-display text-lg mb-2">Percorso e tempi</h2>
         <p className="text-xs opacity-60 mb-3">
-          Tempi a piedi e in bici stimati in linea d\u2019aria con margine urbano (ritmo tranquillo, caldo incluso). Bus/tram TUSSAM: linee indicative, orari e prezzi da verificare su <a className="underline" href="https://www.tussam.es" target="_blank" rel="noreferrer">tussam.es</a>. Bici pubbliche: Sevici.
+          Tempi a piedi e in bici stimati in linea d’aria con margine urbano (ritmo tranquillo, caldo incluso). Bus/tram TUSSAM: linee indicative, orari e prezzi da verificare su <a className="underline" href="https://www.tussam.es" target="_blank" rel="noreferrer">tussam.es</a>. Bici pubbliche: Sevici.
         </p>
         <ol className="space-y-2">
           {legs.map((l, i) => (

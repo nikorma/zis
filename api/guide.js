@@ -20,11 +20,11 @@ export default async function handler(req, res) {
   const now = Date.now();
   const slot = hourly.get(ip);
   if (!slot || now > slot.resetTs) hourly.set(ip, { count: 1, resetTs: now + 3600_000 });
-  else if (slot.count >= MAX_PER_HOUR) return res.status(429).json({ error: 'Troppe guide generate in quest\u2019ora: riprova più tardi.' });
+  else if (slot.count >= MAX_PER_HOUR) return res.status(429).json({ error: 'Troppe guide generate in quest’ora: riprova più tardi.' });
   else slot.count += 1;
 
   const { title, address } = req.body || {};
-  if (!title) return res.status(400).json({ error: 'Serve il nome dell\u2019attrazione.' });
+  if (!title) return res.status(400).json({ error: 'Serve il nome dell’attrazione.' });
 
   const system = `Sei un'audioguida museale esperta. Rispondi ESCLUSIVAMENTE con JSON valido, senza testo attorno.
 Schema: {"points":[{"name":"nome del punto/sala","text":"testo dell'audioguida"}]}

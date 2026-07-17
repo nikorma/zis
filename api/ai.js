@@ -50,7 +50,7 @@ export default async function handler(req, res) {
   if (!slot || now > slot.resetTs) {
     hourlyByIp.set(ip, { count: 1, resetTs: now + 3600_000 });
   } else if (slot.count >= maxPerHour) {
-    return res.status(429).json({ error: 'Troppe richieste in quest\u2019ora: riprova più tardi.' });
+    return res.status(429).json({ error: 'Troppe richieste in quest’ora: riprova più tardi.' });
   } else {
     slot.count += 1;
   }
@@ -59,7 +59,7 @@ export default async function handler(req, res) {
   const today = new Date().toISOString().slice(0, 10);
   if (dailyTokens.day !== today) dailyTokens = { day: today, used: 0 };
   if (dailyTokens.used >= dailyLimit) {
-    return res.status(429).json({ error: 'Limite giornaliero raggiunto: l\u2019assistente torna disponibile domani.' });
+    return res.status(429).json({ error: 'Limite giornaliero raggiunto: l’assistente torna disponibile domani.' });
   }
 
   const question = (req.body?.question || '').toString().slice(0, 500);

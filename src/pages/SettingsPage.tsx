@@ -45,7 +45,7 @@ export default function SettingsPage() {
   };
 
   const doDelete = () => {
-    if (confirm('Eliminare TUTTI i dati salvati (itinerario, biglietti, preferenze, audio scaricati)? L\u2019operazione non è reversibile.')) {
+    if (confirm('Eliminare TUTTI i dati salvati (itinerario, biglietti, preferenze, audio scaricati)? L’operazione non è reversibile.')) {
       clearAllData();
       location.reload();
     }
@@ -66,7 +66,7 @@ export default function SettingsPage() {
             <option value="auto">Automatico (sistema)</option>
           </select>
         </label>
-        <label className="label">Lingua dell\u2019interfaccia
+        <label className="label">Lingua dell’interfaccia
           <select className="input" value={s.lang} onChange={(e) => setS({ lang: e.target.value as Lang })}>
             {(Object.keys(LANG_NAMES) as Lang[]).map((l) => <option key={l} value={l}>{LANG_NAMES[l]}</option>)}
           </select>
@@ -93,11 +93,11 @@ export default function SettingsPage() {
             Notification.requestPermission().then((p) => setS({ notificationsConsent: p === 'granted' }));
           } else setS({ notificationsConsent: false });
         }} /> Notifiche di arrivo</label>
-        <p className="text-xs opacity-60">All\u2019arrivo il telefono vibra (se supportato), mostra una notifica e annuncia a voce il nome della destinazione.</p>
+        <p className="text-xs opacity-60">All’arrivo il telefono vibra (se supportato), mostra una notifica e annuncia a voce il nome della destinazione.</p>
       </section>
 
       <section className="card space-y-3">
-        <h2 className="font-display text-lg">Voce dell\u2019audioguida</h2>
+        <h2 className="font-display text-lg">Voce dell’audioguida</h2>
         <label className="label">Modalità
           <select className="input" value={s.ttsMode} onChange={(e) => setS({ ttsMode: e.target.value as Settings['ttsMode'] })}>
             <option value="webspeech">Voce del dispositivo (funziona sempre, anche offline)</option>
@@ -119,7 +119,7 @@ export default function SettingsPage() {
         </label>
         <label className="flex items-center gap-2">
           <input type="checkbox" checked={s.autoplayConsentGiven} onChange={(e) => setS({ autoplayConsentGiven: e.target.checked, autoplayAudio: e.target.checked })} />
-          Consenti l\u2019avvio automatico dell\u2019audio all\u2019arrivo in un luogo
+          Consenti l’avvio automatico dell’audio all’arrivo in un luogo
         </label>
       </section>
 
@@ -133,7 +133,7 @@ export default function SettingsPage() {
           </label>
         </div>
         <p className="text-xs opacity-60">
-          I dati vivono solo su questo dispositivo (nessun account necessario). Per passare a un altro telefono: esporta qui, importa là. In caso di conflitto l\u2019unione intelligente mantiene, per ogni giornata e biglietto, la versione più completa (tappe visitate e acquisti non si perdono).
+          I dati vivono solo su questo dispositivo (nessun account necessario). Per passare a un altro telefono: esporta qui, importa là. In caso di conflitto l’unione intelligente mantiene, per ogni giornata e biglietto, la versione più completa (tappe visitate e acquisti non si perdono).
         </p>
         <button className="btn text-red-700 border border-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 w-full" onClick={doDelete}>
           🗑️ Elimina tutti i miei dati

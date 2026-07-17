@@ -69,15 +69,15 @@ export default function AdminPage() {
       <section className="card space-y-2">
         <h2 className="font-display text-lg">📝 Contenuti della guida</h2>
         <p className="text-sm opacity-80">
-          I testi generati (presentazioni delle tappe di gruppo) si modificano direttamente dall\u2019app; l\u2019itinerario personale si esporta/importa dalle Impostazioni.
+          I testi generati (presentazioni delle tappe di gruppo) si modificano direttamente dall’app; l’itinerario personale si esporta/importa dalle Impostazioni.
         </p>
         <p className="text-sm opacity-80">
-          <strong>Rigenera con IA (predisposto):</strong> con il backend attivo, l\u2019endpoint <code>/api/ai</code> genera le presentazioni delle nuove tappe e le risposte della guida; <code>/api/planner</code> genera gli itinerari.
+          <strong>Rigenera con IA (predisposto):</strong> con il backend attivo, l’endpoint <code>/api/ai</code> genera le presentazioni delle nuove tappe e le risposte della guida; <code>/api/planner</code> genera gli itinerari.
         </p>
       </section>
 
       <section className="card space-y-2">
-        <h2 className="font-display text-lg">🔧 Stato dell\u2019app</h2>
+        <h2 className="font-display text-lg">🔧 Stato dell’app</h2>
         <ul className="text-sm space-y-1">
           <li>Giornate in itinerario: <strong>{data.days.length}</strong></li>
           <li>Tappe totali: <strong>{data.days.reduce((a, d) => a + d.stops.length, 0)}</strong></li>

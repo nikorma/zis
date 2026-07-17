@@ -38,6 +38,19 @@ export interface GroupStop {
   visited?: boolean;
 }
 
+export interface Member { id: string; name: string }
+
+export interface Expense {
+  id: string;
+  desc: string;
+  amount: number;          // euro
+  payerId: string;
+  payerName: string;
+  splitWith: string[];     // uid dei partecipanti che dividono (incluso chi ha pagato)
+  place?: string;
+  createdAt?: unknown;
+}
+
 export interface ChangeRequest {
   id: string;
   stopId: string;
@@ -118,6 +131,8 @@ export async function joinGroup(code: string): Promise<GroupInfo> {
   const snap = await getDocs(q);
   if (snap.empty) throw new Error('Codice non trovato: controlla maiuscole e trattino (es. ZIS-A2B3C).');
   const g = snap.docs[0];
+  const me = await ensureUser();
+  await setDoc(doc(d, 'groups', g.id, 'members', me.uid), { name: getDisplayName() || 'Senza nome' });
   saveGroupId(g.id);
   const data = g.data();
   return { id: g.id, name: data.name, code: data.code, createdBy: data.createdBy };
@@ -129,7 +144,9 @@ export function subscribeGroup(
   groupId: string,
   onGroup: (g: GroupInfo | null) => void,
   onStops: (s: GroupStop[]) => void,
-  onRequests: (r: ChangeRequest[]) => void
+  onRequests: (r: ChangeRequest[]) => void,
+  onMembers?: (m: Member[]) => void,
+  onExpenses?: (e: Expense[]) => void
 ): () => void {
   const d = ensure();
   const offG = onSnapshot(doc(d, 'groups', groupId), (s) => {
@@ -143,7 +160,19 @@ export function subscribeGroup(
   const offR = onSnapshot(collection(d, 'groups', groupId, 'requests'), (snap) => {
     onRequests(snap.docs.map((x) => ({ id: x.id, ...(x.data() as Omit<ChangeRequest, 'id'>) })));
   });
-  return () => { offG(); offS(); offR(); };
+  const offM = onMembers
+    ? onSnapshot(collection(d, 'groups', groupId, 'members'), (snap) => {
+        onMembers(snap.docs.map((x) => ({ id: x.id, name: (x.data() as { name?: string }).name || 'Senza nome' })));
+      })
+    : () => {};
+  const offE = onExpenses
+    ? onSnapshot(collection(d, 'groups', groupId, 'expenses'), (snap) => {
+        const list = snap.docs.map((x) => ({ id: x.id, ...(x.data() as Omit<Expense, 'id'>) }));
+        list.sort((a, b) => String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? '')));
+        onExpenses(list);
+      })
+    : () => {};
+  return () => { offG(); offS(); offR(); offM(); offE(); };
 }
 
 // ---------- Tappe ----------
@@ -206,6 +235,53 @@ export async function updateOwnStop(groupId: string, stopId: string, patch: Part
 export async function deleteOwnStop(groupId: string, stopId: string): Promise<void> {
   const d = ensure();
   await deleteDoc(doc(d, 'groups', groupId, 'stops', stopId));
+}
+
+// ---------- 💶 Nota spese di gruppo ----------
+
+export async function addExpense(groupId: string, desc: string, amount: number, splitWith: string[], place?: string): Promise<void> {
+  const d = ensure();
+  const user = await ensureUser();
+  await addDoc(collection(d, 'groups', groupId, 'expenses'), {
+    desc: desc.trim(), amount: Math.round(amount * 100) / 100,
+    payerId: user.uid, payerName: getDisplayName() || 'Senza nome',
+    splitWith, place: place ?? '', createdAt: serverTimestamp(),
+  });
+}
+
+export async function deleteExpense(groupId: string, exp: Expense): Promise<void> {
+  const d = ensure();
+  const user = await ensureUser();
+  if (user.uid !== exp.payerId) throw new Error('Solo chi ha pagato può eliminare la spesa.');
+  await deleteDoc(doc(d, 'groups', groupId, 'expenses', exp.id));
+}
+
+/** Saldi: quanto ha anticipato meno la propria quota. Positivo = deve ricevere. */
+export function computeBalances(expenses: Expense[], members: Member[]): { member: Member; balance: number }[] {
+  const bal: Record<string, number> = {};
+  for (const m of members) bal[m.id] = 0;
+  for (const e of expenses) {
+    const share = e.amount / Math.max(1, e.splitWith.length);
+    bal[e.payerId] = (bal[e.payerId] ?? 0) + e.amount;
+    for (const uid of e.splitWith) bal[uid] = (bal[uid] ?? 0) - share;
+  }
+  return members.map((m) => ({ member: m, balance: Math.round((bal[m.id] ?? 0) * 100) / 100 }));
+}
+
+/** Suggerimenti "chi paga chi" per pareggiare (algoritmo semplice). */
+export function settleUp(balances: { member: Member; balance: number }[]): string[] {
+  const creditors = balances.filter((b) => b.balance > 0.005).map((b) => ({ ...b })).sort((a, b) => b.balance - a.balance);
+  const debtors = balances.filter((b) => b.balance < -0.005).map((b) => ({ ...b })).sort((a, b) => a.balance - b.balance);
+  const out: string[] = [];
+  let i = 0, j = 0;
+  while (i < debtors.length && j < creditors.length) {
+    const pay = Math.min(-debtors[i].balance, creditors[j].balance);
+    out.push(`${debtors[i].member.name} deve dare €${pay.toFixed(2)} a ${creditors[j].member.name}`);
+    debtors[i].balance += pay; creditors[j].balance -= pay;
+    if (debtors[i].balance > -0.005) i++;
+    if (creditors[j].balance < 0.005) j++;
+  }
+  return out;
 }
 
 // ---------- Richieste (per le tappe degli altri) ----------

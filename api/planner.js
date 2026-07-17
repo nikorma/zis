@@ -22,12 +22,12 @@ export default async function handler(req, res) {
   const now = Date.now();
   const slot = hourly.get(ip);
   if (!slot || now > slot.resetTs) hourly.set(ip, { count: 1, resetTs: now + 3600_000 });
-  else if (slot.count >= MAX_PER_HOUR) return res.status(429).json({ error: 'Troppi itinerari generati in quest\u2019ora: riprova più tardi.' });
+  else if (slot.count >= MAX_PER_HOUR) return res.status(429).json({ error: 'Troppi itinerari generati in quest’ora: riprova più tardi.' });
   else slot.count += 1;
 
   const {
     destination, startDate, endDate, checkinTime, checkoutTime,
-    afternoonBreak, lunchOut, dinnerOut, notes, mealTimes,
+    afternoonBreak, lunchOut, dinnerOut, notes, mealTimes, mode, wishlist,
   } = req.body || {};
   const mt = { wake: '07:30', breakfast: '08:00', lunch: '13:00', dinner: '20:30', ...(mealTimes || {}) };
   if (!destination || !startDate || !endDate) {
@@ -44,7 +44,9 @@ Regole:
 - La prima tappa di ogni giornata inizia circa 45 minuti dopo la colazione (mai prima).
 - ${lunchOut ? `Includi ogni giorno una tappa PRANZO alle ${mt.lunch} in punto (indica il tipo di locale, non inventare nomi se non sei certo).` : 'NON pianificare pranzi fuori, ma lascia libera la fascia del pranzo.'}
 - ${dinnerOut ? `Includi ogni giorno una tappa CENA alle ${mt.dinner} in punto.` : 'NON pianificare cene fuori.'}
-- Tappe realistiche e vicine tra loro, ordine geografico sensato, 4-7 tappe al giorno.
+${mode === 'manuale' && wishlist ? `- L'UTENTE HA SCELTO LUI cosa vedere. Usa ESATTAMENTE questi luoghi come tappe (tutti, senza aggiungerne altri di visita):
+${wishlist}
+  Distribuiscili tra i giorni e ORDINALI PER VICINANZA GEOGRAFICA (percorsi sensati, meno spostamenti possibili). Aggiungi solo pasti/pause secondo le regole sopra.` : '- Tappe realistiche e vicine tra loro, ordine geografico sensato, 4-7 tappe al giorno.'}
 - "paid": true se serve un biglietto d'ingresso, false se gratuito; NON inventare mai prezzi od orari.
 - "officialSite": SOLO il dominio ufficiale se ne sei assolutamente certo (es. museo molto famoso); in dubbio metti null.
 - Lingua: italiano. Se citi l'app, chiamala \"ZainoInSpalla\".`;

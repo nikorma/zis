@@ -88,7 +88,7 @@ export function importJson(text: string): ImportResult {
     const parsed = JSON.parse(text);
     const payload = parsed?.data ?? parsed;
     if (!payload || !Array.isArray(payload.days)) {
-      return { ok: false, error: 'File non valido: manca l\u2019itinerario (days).' };
+      return { ok: false, error: 'File non valido: manca l’itinerario (days).' };
     }
     return { ok: true, data: migrate(payload as AppData) };
   } catch {

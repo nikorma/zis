@@ -74,7 +74,7 @@ export default function AssistantPage() {
       </div>
 
       <p className="text-xs opacity-60">
-        Limite giornaliero di domande per contenere i costi (vedi pannello admin). Le richieste passano da un backend protetto: la chiave AI non è mai nel telefono. Se il backend non è configurato, l\u2019assistente risponde solo dalle risposte già salvate.
+        Limite giornaliero di domande per contenere i costi (vedi pannello admin). Le richieste passano da un backend protetto: la chiave AI non è mai nel telefono. Se il backend non è configurato, l’assistente risponde solo dalle risposte già salvate.
       </p>
     </div>
   );

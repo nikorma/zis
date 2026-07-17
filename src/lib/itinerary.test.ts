@@ -158,7 +158,7 @@ describe('storage: risoluzione conflitti (sync manuale)', () => {
     expect(merged.days[0].stops[0].visited).toBe(true);
   });
 
-  it('un biglietto acquistato non viene mai retrocesso dall\u2019unione', () => {
+  it('un biglietto acquistato non viene mai retrocesso dall’unione', () => {
     const a = emptyData();
     a.tickets = ensureTicket({}, 'museo'); // da_acquistare
     const b = emptyData();

@@ -29,6 +29,8 @@ export default function PlannerPage() {
   const [checkin, setCheckin] = useState('15:00');
   const [checkout, setCheckout] = useState('10:00');
   const [notes, setNotes] = useState('');
+  const [mode, setMode] = useState<'auto' | 'manuale'>('auto');
+  const [wishlist, setWishlist] = useState('');
 
   // Passo 2: le DOMANDE OBBLIGATORIE prima di generare
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -41,7 +43,8 @@ export default function PlannerPage() {
   const [err, setErr] = useState<string | null>(null);
   const [plan, setPlan] = useState<PlanDay[] | null>(null);
 
-  const canStep2 = (destPicked || dest.trim().length >= 3) && start && end && start <= end;
+  const canStep2 = (destPicked || dest.trim().length >= 3) && start && end && start <= end
+    && (mode === 'auto' || wishlist.trim().length >= 3);
   const canGenerate = siesta !== null && lunchOut !== null && dinnerOut !== null;
 
   const generate = async () => {
@@ -57,6 +60,7 @@ export default function PlannerPage() {
           checkinTime: checkin, checkoutTime: checkout,
           afternoonBreak: siesta, lunchOut, dinnerOut, notes,
           mealTimes: meals,
+          mode, wishlist: mode === 'manuale' ? wishlist : undefined,
         }),
       });
       const json = await res.json();
@@ -77,7 +81,7 @@ export default function PlannerPage() {
     } catch (e) {
       setErr(
         (e as Error).message.includes('non configurato')
-          ? 'Il planner richiede il backend AI: aggiungi OPENAI_API_KEY nelle variabili d\u2019ambiente su Vercel (vedi README).'
+          ? 'Il planner richiede il backend AI: aggiungi OPENAI_API_KEY nelle variabili d’ambiente su Vercel (vedi README).'
           : `${(e as Error).message}`
       );
     }
@@ -158,6 +162,18 @@ export default function PlannerPage() {
             <label className="label">Orario check-in<input className="input" type="time" value={checkin} onChange={(e) => setCheckin(e.target.value)} /></label>
             <label className="label">Orario check-out<input className="input" type="time" value={checkout} onChange={(e) => setCheckout(e.target.value)} /></label>
           </div>
+          <div className="space-y-1">
+            <p className="label !mb-0">Chi sceglie le cose da vedere?</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button className={mode === 'auto' ? 'chip-on justify-center !py-2' : 'chip-off justify-center !py-2'} onClick={() => setMode('auto')}>🤖 Fa tutto ZainoInSpalla</button>
+              <button className={mode === 'manuale' ? 'chip-on justify-center !py-2' : 'chip-off justify-center !py-2'} onClick={() => setMode('manuale')}>✍️ Scrivo io cosa vedere</button>
+            </div>
+            {mode === 'manuale' && (
+              <label className="label">Le cose che VUOI vedere (una per riga)
+                <textarea className="input" rows={5} placeholder={'Acropoli\nMuseo Archeologico\nQuartiere Plaka\nTempio di Poseidone a Sounio'} value={wishlist} onChange={(e) => setWishlist(e.target.value)} />
+              </label>
+            )}
+          </div>
           <label className="label">Preferenze extra (facoltativo)<input className="input" placeholder="es. viaggio con bambini, amo i musei…" value={notes} onChange={(e) => setNotes(e.target.value)} /></label>
           <button className="btn-primary w-full" disabled={!canStep2} onClick={() => setStep(2)}>Avanti →</button>
         </section>
@@ -176,7 +192,7 @@ export default function PlannerPage() {
             </div>
           </div>
           <div className="space-y-2">
-            <p className="font-medium">🛌 Il giro dev\u2019essere senza sosta pomeridiana?</p>
+            <p className="font-medium">🛌 Il giro dev’essere senza sosta pomeridiana?</p>
             <YesNo value={siesta === null ? null : !siesta} onChange={(v) => setSiesta(!v)} yes="Sì, tutto di fila" no="No, voglio la pausa" />
           </div>
           <div className="space-y-2">
@@ -190,7 +206,7 @@ export default function PlannerPage() {
           <div className="flex gap-2">
             <button className="btn-ghost" onClick={() => setStep(1)}>← Indietro</button>
             <button className="btn-primary flex-1" disabled={!canGenerate || busy} onClick={generate}>
-              {busy ? '⏳ Creo l\u2019itinerario…' : '✨ Crea itinerario'}
+              {busy ? '⏳ Creo l’itinerario…' : '✨ Crea itinerario'}
             </button>
           </div>
         </section>
@@ -213,12 +229,12 @@ export default function PlannerPage() {
           <section className="card space-y-2">
             <p className="badge-ok !flex w-full justify-center">✅ Salvato automaticamente in "I miei viaggi" (lo trovi nella Home)</p>
             <div className="grid grid-cols-2 gap-2">
-              <button className="btn-primary" onClick={() => nav('/itinerario')}>🗓️ Apri l\u2019itinerario</button>
+              <button className="btn-primary" onClick={() => nav('/itinerario')}>🗓️ Apri l’itinerario</button>
               <button className="btn-secondary" onClick={shareText}>📤 Condividi (WhatsApp…)</button>
               <button className="btn-secondary col-span-2" disabled={busy} onClick={sendToGroup}>👥 Invia al Gruppo</button>
             </div>
             <button className="btn-ghost w-full" onClick={() => { setPlan(null); setStep(2); }}>🔄 Rigenera con altre scelte</button>
-            <p className="text-xs opacity-60">⚠️ Orari di apertura e prezzi non sono garantiti: l\u2019itinerario è una proposta da verificare sui siti ufficiali.</p>
+            <p className="text-xs opacity-60">⚠️ Orari di apertura e prezzi non sono garantiti: l’itinerario è una proposta da verificare sui siti ufficiali.</p>
           </section>
         </>
       )}

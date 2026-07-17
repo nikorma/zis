@@ -184,7 +184,7 @@ export function buildPackingList(input: PackingInput, climate: ClimateEstimate |
   if (laundry) add('Cura', 'Detersivo da viaggio / saponetta bucato', 1, 0.3, 2, 1, 'per i lavaggi previsti');
   add('Tech', 'Caricatore + powerbank', 1, 0.5, 0, 1, flying ? 'powerbank SEMPRE in cabina, mai in stiva' : undefined);
   add('Documenti', 'Documento/passaporto + tessera sanitaria', 1, 0.05, 0, 1);
-  if (flying) add('Documenti', 'Carte d\u2019imbarco scaricate offline', 1, 0, 0, 1);
+  if (flying) add('Documenti', 'Carte d’imbarco scaricate offline', 1, 0, 0, 1);
   if (input.transport === 'nave') add('Cura', 'Cerotti/pastiglie anti mal di mare', 1, 0.1, 0, 1);
   if (input.transport === 'auto') add('Documenti', 'Patente + documenti auto', 1, 0.05, 0, 1);
   add('Accessori', 'Zainetto pieghevole per il giorno', 1, 0.5, 3, 1);

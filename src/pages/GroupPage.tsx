@@ -7,8 +7,10 @@ import {
   firebaseReady, ensureUser, getDisplayName, setDisplayName,
   getSavedGroupId, leaveGroup, createGroup, joinGroup, subscribeGroup,
   addGroupStop, updateOwnStop, deleteOwnStop, requestChange, resolveRequest, generatePresentation,
-  type GroupInfo, type GroupStop, type ChangeRequest,
+  addExpense, deleteExpense, computeBalances, settleUp,
+  type GroupInfo, type GroupStop, type ChangeRequest, type Member, type Expense,
 } from '../services/group';
+import { useApp } from '../state/AppStore';
 
 export default function GroupPage() {
   const [uid, setUid] = useState<string | null>(null);
@@ -19,6 +21,14 @@ export default function GroupPage() {
   const [requests, setRequests] = useState<ChangeRequest[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const { data } = useApp();
+  const [members, setMembers] = useState<Member[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  // form nota spese
+  const [ex, setEx] = useState({ desc: '', amount: '', place: '' });
+  const [split, setSplit] = useState<Set<string> | null>(null); // null = tutti
+  const [exBusy, setExBusy] = useState(false);
+  const [locBusy, setLocBusy] = useState(false);
 
   // form nuova tappa
   const [nt, setNt] = useState({ title: '', date: '2026-08-05', time: '', address: '', notes: '' });
@@ -34,7 +44,7 @@ export default function GroupPage() {
 
   useEffect(() => {
     if (!firebaseReady() || !groupId) return;
-    const off = subscribeGroup(groupId, setGroup, setStops, setRequests);
+    const off = subscribeGroup(groupId, setGroup, setStops, setRequests, setMembers, setExpenses);
     return off;
   }, [groupId]);
 
@@ -59,7 +69,7 @@ export default function GroupPage() {
           <p className="font-semibold">Per attivare il gruppo serve un progetto Firebase gratuito (5 minuti):</p>
           <ol className="list-decimal pl-5 space-y-1">
             <li>Vai su <span className="font-mono">console.firebase.google.com</span> → Aggiungi progetto (Analytics: no)</li>
-            <li>Icona <span className="font-mono">&lt;/&gt;</span> → registra l\u2019app web → copia il blocco <span className="font-mono">firebaseConfig</span></li>
+            <li>Icona <span className="font-mono">&lt;/&gt;</span> → registra l’app web → copia il blocco <span className="font-mono">firebaseConfig</span></li>
             <li>Incollalo nel file <span className="font-mono">src/firebaseConfig.ts</span> del progetto su GitHub</li>
             <li>Authentication → Sign-in method → abilita <strong>Anonimo</strong></li>
             <li>Firestore Database → Crea database → Regole: incolla quelle nel README → Pubblica</li>
@@ -105,6 +115,66 @@ export default function GroupPage() {
   }
 
   // ---------- Gruppo attivo ----------
+
+  const splitSet: Set<string> = split ?? new Set(members.map((m) => m.id));
+  const toggleSplit = (id: string) => {
+    const next = new Set(splitSet);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    setSplit(next);
+  };
+
+  const suggestPlace = () => {
+    if (!navigator.geolocation) { setErr('GPS non disponibile su questo dispositivo.'); return; }
+    setLocBusy(true);
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      const here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      const dist = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
+        const R = 6371000, toR = Math.PI / 180;
+        const dLat = (b.lat - a.lat) * toR, dLng = (b.lng - a.lng) * toR;
+        const x = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * toR) * Math.cos(b.lat * toR) * Math.sin(dLng / 2) ** 2;
+        return 2 * R * Math.asin(Math.sqrt(x));
+      };
+      // 1) tappa più vicina (gruppo + mio itinerario)
+      const candidates: { title: string; coords: { lat: number; lng: number } }[] = [
+        ...stops.filter((st) => st.coords).map((st) => ({ title: st.title, coords: st.coords as { lat: number; lng: number } })),
+        ...data.days.flatMap((d) => d.stops.filter((st) => st.coords).map((st) => ({ title: st.title, coords: st.coords as { lat: number; lng: number } }))),
+      ];
+      let best: { title: string; m: number } | null = null;
+      for (const c of candidates) {
+        const m = dist(here, c.coords);
+        if (!best || m < best.m) best = { title: c.title, m };
+      }
+      if (best && best.m <= 400) {
+        setEx((e) => ({ ...e, place: best!.title, desc: e.desc || best!.title }));
+        setLocBusy(false);
+        return;
+      }
+      // 2) altrimenti: nome del posto dalla mappa (reverse geocoding)
+      try {
+        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&accept-language=it&lat=${here.lat}&lon=${here.lng}`);
+        const j = await r.json();
+        const name = j?.name || j?.address?.amenity || j?.address?.road || (j?.display_name || '').split(',')[0];
+        if (name) setEx((e) => ({ ...e, place: name, desc: e.desc || name }));
+      } catch { /* pazienza */ }
+      setLocBusy(false);
+    }, () => { setLocBusy(false); setErr('Non riesco a leggere la posizione: controlla i permessi GPS.'); }, { enableHighAccuracy: true, timeout: 8000 });
+  };
+
+  const submitExpense = async () => {
+    const amount = Number(ex.amount.replace(',', '.'));
+    if (!ex.desc.trim() || !amount || amount <= 0 || splitSet.size === 0 || !groupId) return;
+    setExBusy(true); setErr(null);
+    try {
+      await addExpense(groupId, ex.desc, amount, [...splitSet], ex.place || undefined);
+      setEx({ desc: '', amount: '', place: '' });
+      setSplit(null);
+    } catch (e) { setErr(String((e as Error).message || e)); }
+    setExBusy(false);
+  };
+
+  const balances = computeBalances(expenses, members);
+  const settlements = settleUp(balances);
+  const nameOf = (id: string) => members.find((m) => m.id === id)?.name ?? '?';
 
   const byDate: Record<string, GroupStop[]> = {};
   for (const s of stops) (byDate[s.date] ??= []).push(s);
@@ -166,6 +236,80 @@ export default function GroupPage() {
           setBusy(false);
         }}>{busy ? '⏳ Genero la presentazione…' : '✨ Aggiungi (con presentazione e audio automatici)'}</button>
         <p className="text-xs opacity-60">La presentazione viene scritta in automatico in stile guida (via /api/ai se configurato) ed è subito ascoltabile da tutti come audioguida.</p>
+      </section>
+
+      <section className="card space-y-3">
+        <h2 className="font-display text-lg">💶 Nota spese del gruppo</h2>
+
+        <div className="space-y-2">
+          <div className="grid grid-cols-[1fr_96px] gap-2">
+            <input className="input" placeholder="Cosa hai pagato? (es. cena da Panconplaino)" value={ex.desc} onChange={(e) => setEx({ ...ex, desc: e.target.value })} />
+            <input className="input" type="text" inputMode="decimal" placeholder="€ 0,00" value={ex.amount} onChange={(e) => setEx({ ...ex, amount: e.target.value })} />
+          </div>
+          <div className="flex items-center gap-2">
+            <button className="btn-secondary !min-h-[38px] !py-1 text-sm" disabled={locBusy} onClick={suggestPlace}>
+              {locBusy ? '⏳ Cerco dove sei…' : '📍 Usa il luogo dove sono'}
+            </button>
+            {ex.place && <span className="text-xs badge-ok">📍 {ex.place}</span>}
+          </div>
+          <div>
+            <p className="label !mb-1">Da dividere con:</p>
+            <div className="flex flex-wrap gap-1.5">
+              {members.map((m) => (
+                <button key={m.id} className={splitSet.has(m.id) ? 'chip-on !py-1 !px-3 text-xs' : 'chip-off !py-1 !px-3 text-xs'} onClick={() => toggleSplit(m.id)} aria-pressed={splitSet.has(m.id)}>
+                  {m.id === uid ? `${m.name} (io)` : m.name}
+                </button>
+              ))}
+            </div>
+            <p className="text-[11px] opacity-60 mt-1">La cifra si divide in parti uguali tra i selezionati (compreso chi ha pagato).</p>
+          </div>
+          <button className="btn-gold w-full" disabled={exBusy || !ex.desc.trim() || !Number(ex.amount.replace(',', '.')) || splitSet.size === 0} onClick={submitExpense}>
+            {exBusy ? '⏳…' : `➕ Aggiungi spesa${splitSet.size > 0 && Number(ex.amount.replace(',', '.')) > 0 ? ` (€${(Number(ex.amount.replace(',', '.')) / splitSet.size).toFixed(2)} a testa)` : ''}`}
+          </button>
+        </div>
+
+        {expenses.length > 0 && (
+          <>
+            <div className="space-y-1.5">
+              {expenses.map((e) => (
+                <div key={e.id} className="rounded-xl bg-crema dark:bg-[#141C33] p-2.5 text-sm">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="font-semibold">{e.desc}</p>
+                    <p className="tabular-nums font-bold shrink-0">€{e.amount.toFixed(2)}</p>
+                  </div>
+                  <p className="text-xs opacity-70">
+                    Ha pagato <strong>{e.payerName}</strong> · diviso per {e.splitWith.length} (€{(e.amount / Math.max(1, e.splitWith.length)).toFixed(2)} a testa)
+                    {e.place ? <> · 📍 {e.place}</> : null}
+                  </p>
+                  <p className="text-[11px] opacity-60">Con: {e.splitWith.map(nameOf).join(', ')}</p>
+                  {e.payerId === uid && (
+                    <button className="text-xs opacity-60 underline mt-1" onClick={() => { if (confirm('Eliminare questa spesa?')) deleteExpense(groupId, e).catch((er) => setErr(String((er as Error).message))); }}>🗑️ elimina</button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-xl border-2 border-menta/60 p-3 space-y-1.5">
+              <p className="font-display font-semibold">⚖️ Come siamo messi</p>
+              {balances.map((b) => (
+                <p key={b.member.id} className="text-sm flex justify-between">
+                  <span>{b.member.id === uid ? `${b.member.name} (io)` : b.member.name}</span>
+                  <span className={`tabular-nums font-semibold ${b.balance > 0.005 ? 'text-[#0E7A5D]' : b.balance < -0.005 ? 'text-red-700 dark:text-red-300' : 'opacity-60'}`}>
+                    {b.balance > 0.005 ? `deve ricevere €${b.balance.toFixed(2)}` : b.balance < -0.005 ? `deve dare €${(-b.balance).toFixed(2)}` : 'pari ✓'}
+                  </span>
+                </p>
+              ))}
+              {settlements.length > 0 && (
+                <div className="pt-1 border-t border-dashed border-[#E4D7BC] dark:border-[#33406B]">
+                  <p className="text-xs font-semibold mb-0.5">💸 Per pareggiare:</p>
+                  {settlements.map((t, i) => <p key={i} className="text-sm">→ {t}</p>)}
+                </div>
+              )}
+              <p className="text-[11px] opacity-60">Totale gruppo: €{expenses.reduce((a, e) => a + e.amount, 0).toFixed(2)}</p>
+            </div>
+          </>
+        )}
+        {expenses.length === 0 && <p className="text-sm opacity-60">Nessuna spesa ancora: la prima cena tocca a qualcuno… 😄</p>}
       </section>
 
       {Object.entries(byDate).map(([date, list]) => (

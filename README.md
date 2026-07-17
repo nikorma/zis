@@ -66,10 +66,20 @@ service cloud.firestore {
         allow read, create: if request.auth != null;
         allow update: if request.auth != null && resource.data.ownerId == request.auth.uid;
       }
+      match /members/{uid} {
+        allow read, create: if request.auth != null;
+        allow write: if request.auth != null && uid == request.auth.uid;
+      }
+      match /expenses/{eid} {
+        allow read, create: if request.auth != null;
+        allow update, delete: if request.auth != null && resource.data.payerId == request.auth.uid;
+      }
     }
   }
 }
 ```
+
+> ⚠️ Se avevi già pubblicato le regole PRIMA della nota spese: torna su Firebase → Firestore → Regole, incolla il blocco aggiornato qui sopra e premi **Pubblica**, altrimenti spese e partecipanti verranno rifiutati.
 
 ## Non incluso / predisposto
 

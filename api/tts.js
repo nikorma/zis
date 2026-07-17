@@ -28,7 +28,7 @@ export default async function handler(req, res) {
   const now = Date.now();
   const slot = hourly.get(ip);
   if (!slot || now > slot.resetTs) hourly.set(ip, { count: 1, resetTs: now + 3600_000 });
-  else if (slot.count >= MAX_PER_HOUR) return res.status(429).json({ error: 'Troppe richieste audio in quest\u2019ora.' });
+  else if (slot.count >= MAX_PER_HOUR) return res.status(429).json({ error: 'Troppe richieste audio in quest’ora.' });
   else slot.count += 1;
 
   const text = (req.body?.text || '').toString().slice(0, MAX_CHARS);

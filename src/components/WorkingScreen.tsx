@@ -4,7 +4,7 @@ const DEFAULT_MESSAGES = [
   'Sto convincendo i monumenti a mettersi in fila… 🏛️',
   'Chiedo ai piccioni locali i posti migliori 🐦',
   'Misuro le distanze coi passi di un turista pigro… 👣',
-  'Prenoto il tramonto per l\u2019ora giusta 🌅',
+  'Prenoto il tramonto per l’ora giusta 🌅',
   'Tolgo le salite inutili dal percorso… ⛰️❌',
   'Assaggio virtualmente tutti i ristoranti 🍝',
   'Litigo con la mappa che si era piegata male… 🗺️',

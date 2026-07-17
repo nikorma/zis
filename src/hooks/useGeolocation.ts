@@ -77,11 +77,11 @@ export function useGeolocation() {
       (err) => {
         clearStaleTimer();
         if (err.code === err.PERMISSION_DENIED) {
-          setState((s) => ({ ...s, status: 'denied', errorMessage: 'Permesso GPS negato. Puoi riattivarlo dalle impostazioni del browser (icona lucchetto accanto all\u2019indirizzo).' }));
+          setState((s) => ({ ...s, status: 'denied', errorMessage: 'Permesso GPS negato. Puoi riattivarlo dalle impostazioni del browser (icona lucchetto accanto all’indirizzo).' }));
         } else if (err.code === err.POSITION_UNAVAILABLE) {
           setState((s) => ({ ...s, status: 'unavailable', errorMessage: 'Posizione non disponibile: GPS spento o segnale assente.' }));
         } else {
-          setState((s) => ({ ...s, status: 'unavailable', errorMessage: 'Timeout GPS: riprova all\u2019aperto.' }));
+          setState((s) => ({ ...s, status: 'unavailable', errorMessage: 'Timeout GPS: riprova all’aperto.' }));
         }
       },
       { enableHighAccuracy: true, maximumAge: 5000, timeout: 20000 }

@@ -159,6 +159,14 @@ export default function PackingPage() {
     setExtra({ name: '', qty: 1, vol: 0.5 });
   };
 
+  const changeQty = (name: string, delta: number) => {
+    if (!result) return;
+    const items = result.items
+      .map((i) => (i.name === name ? { ...i, qty: Math.max(0, i.qty + delta) } : i))
+      .filter((i) => i.qty > 0);
+    applyItems(items);
+  };
+
   const removeItem = (name: string) => {
     if (!result) return;
     applyItems(result.items.filter((i) => i.name !== name));
@@ -372,7 +380,11 @@ export default function PackingPage() {
                         <input type="checkbox" className="mt-1" checked={checked.has(i.name)} onChange={() => toggle(i.name)} />
                         <span className="flex-1"><strong>{i.qty}×</strong> {i.name}{i.note && <span className="block text-xs opacity-70 no-underline">↳ {i.note}</span>}</span>
                       </label>
-                      {i.custom && <button className="text-xs opacity-60 underline ml-6" onClick={() => removeItem(i.name)}>✕ togli</button>}
+                      <span className="inline-flex items-center gap-1 ml-6">
+                        <button className="btn-ghost !min-h-[28px] !py-0 !px-2 text-sm" aria-label={`Meno ${i.name}`} onClick={() => changeQty(i.name, -1)}>−</button>
+                        <button className="btn-ghost !min-h-[28px] !py-0 !px-2 text-sm" aria-label={`Più ${i.name}`} onClick={() => changeQty(i.name, +1)}>＋</button>
+                        {i.custom && <button className="text-xs opacity-60 underline ml-1" onClick={() => removeItem(i.name)}>✕ togli</button>}
+                      </span>
                     </li>
                   ))}
                 </ul>

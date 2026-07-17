@@ -40,7 +40,7 @@ export default function AudioControls({
     if (ok && !downloaded) {
       update({ downloadedAudio: [...data.downloadedAudio, audioKey] });
     } else if (!ok) {
-      alert('Download non riuscito: la voce naturale richiede il backend /api/tts pubblicato (vedi README). In alternativa l\u2019audio funziona sempre con la voce del dispositivo.');
+      alert('Download non riuscito: la voce naturale richiede il backend /api/tts pubblicato (vedi README). In alternativa l’audio funziona sempre con la voce del dispositivo.');
     }
   };
 
