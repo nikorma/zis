@@ -120,6 +120,12 @@ export default function HomePage() {
           <p className="text-4xl" aria-hidden>🎒</p>
           <h2 className="font-display font-black text-xl">Il tuo prossimo viaggio parte da qui</h2>
           <p className="text-sm opacity-70">Crea l’itinerario in un minuto con il planner: verrà salvato qui automaticamente.</p>
+          <div className="grid grid-cols-2 gap-2 pt-2 text-left">
+            <Link to="/pianifica" className="btn-primary col-span-2 text-base justify-center">🌍 Pianifica un viaggio</Link>
+            <Link to="/itinerario" className="btn-secondary justify-center">✏️ Crea a mano</Link>
+            <Link to="/gruppo" className="btn-secondary justify-center">👥 Viaggio di gruppo</Link>
+            <Link to="/valigia" className="btn-secondary col-span-2 justify-center">🧳 Valigia intelligente</Link>
+          </div>
         </section>
       ) : (
       <section className="card space-y-2">
