@@ -32,8 +32,11 @@ export default function GroupPage() {
   const [exBusy, setExBusy] = useState(false);
   const [locBusy, setLocBusy] = useState(false);
 
+  // form creazione gruppo
+  const [gname, setGname] = useState('Il nostro viaggio');
+  const [gdates, setGdates] = useState({ start: '', end: '' });
   // form nuova tappa
-  const [nt, setNt] = useState({ title: '', date: '2026-08-05', time: '', address: '', notes: '' });
+  const [nt, setNt] = useState({ title: '', date: '', time: '', address: '', notes: '' });
   const [ntCoords, setNtCoords] = useState<{ lat: number; lng: number } | null>(null);
   // richiesta modifica aperta per stopId
   const [reqFor, setReqFor] = useState<string | null>(null);
@@ -96,12 +99,22 @@ export default function GroupPage() {
         </div>
         <div className="card space-y-2">
           <h2 className="font-display text-lg">Crea un nuovo gruppo</h2>
-          <button className="btn-primary w-full" disabled={busy || !name.trim()} onClick={async () => {
-            setBusy(true); setErr(null);
-            try { setDisplayName(name); const g = await createGroup('Il nostro viaggio'); setGroupId(g.id); }
-            catch (e) { setErr(String((e as Error).message || e)); }
-            setBusy(false);
-          }}>✨ Crea gruppo e genera codice invito</button>
+          <label className="label">Nome del viaggio
+            <input className="input" value={gname} onChange={(e) => setGname(e.target.value)} placeholder="es. Atene 2026" />
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <label className="label">📅 Partenza<input className="input" type="date" value={gdates.start} onChange={(e) => setGdates({ ...gdates, start: e.target.value })} /></label>
+            <label className="label">📅 Ritorno<input className="input" type="date" value={gdates.end} onChange={(e) => setGdates({ ...gdates, end: e.target.value })} /></label>
+          </div>
+          <button className="btn-primary w-full"
+            disabled={busy || !name.trim() || !gdates.start || !gdates.end || gdates.start > gdates.end}
+            onClick={async () => {
+              setBusy(true); setErr(null);
+              try { setDisplayName(name); const g = await createGroup(gname, gdates.start, gdates.end); setGroupId(g.id); }
+              catch (e) { setErr(String((e as Error).message || e)); }
+              setBusy(false);
+            }}>✨ Crea gruppo e genera codice invito</button>
+          {(!gdates.start || !gdates.end) && <p className="text-xs opacity-60">Servono le date di partenza e ritorno: le tappe di tutti resteranno dentro quel periodo.</p>}
         </div>
         <div className="card space-y-2">
           <h2 className="font-display text-lg">Entra con un codice</h2>
@@ -204,6 +217,9 @@ export default function GroupPage() {
         <div>
           <h1 className="page-title">{group?.name ?? 'Gruppo di viaggio'}</h1>
           <p className="text-sm opacity-70">Codice invito: <strong className="font-mono">{group?.code ?? '…'}</strong></p>
+          {group?.startDate && group?.endDate && (
+            <p className="text-xs opacity-70">📅 {new Date(group.startDate + 'T12:00').toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })} → {new Date(group.endDate + 'T12:00').toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}</p>
+          )}
         </div>
         <div className="flex flex-col gap-1 items-end">
           <button className="btn-ghost !min-h-[36px] !py-1 text-sm" onClick={() => {
@@ -253,7 +269,7 @@ export default function GroupPage() {
         {ntCoords && <p className="text-xs badge-ok">📍 Posizione agganciata dalla ricerca — la tappa avrà il "Portami qui"</p>}
         <label className="label">Titolo<input className="input" value={nt.title} placeholder="es. Tramonto sul lungomare" onChange={(e) => setNt({ ...nt, title: e.target.value })} /></label>
         <div className="grid grid-cols-2 gap-2">
-          <label className="label">Data<input className="input" type="date" value={nt.date} onChange={(e) => setNt({ ...nt, date: e.target.value })} /></label>
+          <label className="label">Data<input className="input" type="date" min={group?.startDate} max={group?.endDate} value={nt.date || group?.startDate || ''} onChange={(e) => setNt({ ...nt, date: e.target.value })} /></label>
           <label className="label">Ora<input className="input" type="time" value={nt.time} onChange={(e) => setNt({ ...nt, time: e.target.value })} /></label>
         </div>
         <label className="label">Indirizzo (facoltativo)<input className="input" value={nt.address} onChange={(e) => setNt({ ...nt, address: e.target.value })} /></label>
@@ -262,7 +278,7 @@ export default function GroupPage() {
           setBusy(true); setErr(null);
           try {
             const pres = await generatePresentation(nt.title, nt.notes);
-            await addGroupStop(groupId, { title: nt.title.trim(), date: nt.date, time: nt.time || undefined, address: nt.address || undefined, coords: ntCoords ?? undefined, notes: nt.notes || undefined }, pres);
+            await addGroupStop(groupId, { title: nt.title.trim(), date: nt.date || group?.startDate || new Date().toISOString().slice(0, 10), time: nt.time || undefined, address: nt.address || undefined, coords: ntCoords ?? undefined, notes: nt.notes || undefined }, pres);
             setNt({ title: '', date: nt.date, time: '', address: '', notes: '' });
             setNtCoords(null);
           } catch (e) { setErr(String((e as Error).message || e)); }

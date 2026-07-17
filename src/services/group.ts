@@ -22,7 +22,7 @@ import { firebaseConfig, isFirebaseConfigured } from '../firebaseConfig';
 
 // ---------- Tipi ----------
 
-export interface GroupInfo { id: string; name: string; code: string; createdBy: string }
+export interface GroupInfo { id: string; name: string; code: string; createdBy: string; startDate?: string; endDate?: string }
 
 export interface GroupStop {
   id: string;
@@ -36,6 +36,13 @@ export interface GroupStop {
   ownerId: string;
   ownerName: string;
   visited?: boolean;
+}
+
+/** Firestore rifiuta i valori undefined: li togliamo prima di ogni scrittura. */
+function stripUndef<T extends Record<string, unknown>>(o: T): T {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(o)) if (v !== undefined) out[k] = v;
+  return out as T;
 }
 
 export interface Member { id: string; name: string }
@@ -110,18 +117,21 @@ function makeCode(): string {
   return `ZIS-${c}`;
 }
 
-export async function createGroup(name: string): Promise<GroupInfo> {
+export async function createGroup(name: string, startDate?: string, endDate?: string): Promise<GroupInfo> {
   const d = ensure();
   const user = await ensureUser();
   const code = makeCode();
-  const ref = await addDoc(collection(d, 'groups'), {
+  const ref = await addDoc(collection(d, 'groups'), stripUndef({
     name: name.trim() || 'Il nostro viaggio',
     code,
     createdBy: user.uid,
     createdAt: serverTimestamp(),
-  });
+    startDate, endDate,
+  }));
+  // il creatore è il primo partecipante (serve per la nota spese)
+  await setDoc(doc(d, 'groups', ref.id, 'members', user.uid), { name: getDisplayName() || 'Senza nome' });
   saveGroupId(ref.id);
-  return { id: ref.id, name, code, createdBy: user.uid };
+  return { id: ref.id, name, code, createdBy: user.uid, startDate, endDate };
 }
 
 export async function joinGroup(code: string): Promise<GroupInfo> {
@@ -216,20 +226,20 @@ export async function addGroupStop(
 ): Promise<void> {
   const d = ensure();
   const user = await ensureUser();
-  await addDoc(collection(d, 'groups', groupId, 'stops'), {
+  await addDoc(collection(d, 'groups', groupId, 'stops'), stripUndef({
     ...stop,
     presentation,
     ownerId: user.uid,
     ownerName: getDisplayName() || 'Senza nome',
     createdAt: serverTimestamp(),
-  });
+  }));
 }
 
 /** Modifica diretta: consentita SOLO al proprietario (la UI la mostra solo a lui). */
 export async function updateOwnStop(groupId: string, stopId: string, patch: Partial<GroupStop>): Promise<void> {
   const d = ensure();
   const { id: _i, ownerId: _o, ownerName: _n, ...safe } = patch as GroupStop;
-  await updateDoc(doc(d, 'groups', groupId, 'stops', stopId), safe as Record<string, unknown>);
+  await updateDoc(doc(d, 'groups', groupId, 'stops', stopId), stripUndef(safe as Record<string, unknown>));
 }
 
 export async function deleteOwnStop(groupId: string, stopId: string): Promise<void> {
@@ -290,11 +300,11 @@ export function stopsToDays(groupName: string, stops: GroupStop[], prevDays: Per
 export async function addExpense(groupId: string, desc: string, amount: number, splitWith: string[], place?: string): Promise<void> {
   const d = ensure();
   const user = await ensureUser();
-  await addDoc(collection(d, 'groups', groupId, 'expenses'), {
+  await addDoc(collection(d, 'groups', groupId, 'expenses'), stripUndef({
     desc: desc.trim(), amount: Math.round(amount * 100) / 100,
     payerId: user.uid, payerName: getDisplayName() || 'Senza nome',
     splitWith, place: place ?? '', createdAt: serverTimestamp(),
-  });
+  }));
 }
 
 export async function deleteExpense(groupId: string, exp: Expense): Promise<void> {
@@ -343,7 +353,7 @@ export async function requestChange(
 ): Promise<void> {
   const d = ensure();
   const user = await ensureUser();
-  await addDoc(collection(d, 'groups', groupId, 'requests'), {
+  await addDoc(collection(d, 'groups', groupId, 'requests'), stripUndef({
     stopId: stop.id,
     stopTitle: stop.title,
     type,
@@ -354,7 +364,7 @@ export async function requestChange(
     ownerId: stop.ownerId,
     status: 'in-attesa',
     createdAt: serverTimestamp(),
-  });
+  }));
 }
 
 /** Solo il proprietario della tappa decide. Se approva, la modifica viene applicata. */
@@ -370,7 +380,7 @@ export async function resolveRequest(
     if (req.type === 'cancellazione') {
       await deleteDoc(doc(d, 'groups', groupId, 'stops', req.stopId));
     } else if (req.patch) {
-      await updateDoc(doc(d, 'groups', groupId, 'stops', req.stopId), req.patch as Record<string, unknown>);
+      await updateDoc(doc(d, 'groups', groupId, 'stops', req.stopId), stripUndef(req.patch as Record<string, unknown>));
     }
   }
   await setDoc(doc(d, 'groups', groupId, 'requests', req.id), { status: approve ? 'approvata' : 'rifiutata' }, { merge: true });
