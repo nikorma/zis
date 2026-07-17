@@ -339,7 +339,12 @@ export default function ItineraryPage() {
   return (
     <div className="max-w-xl mx-auto p-4 space-y-4">
       <header className="flex items-center justify-between gap-2">
-        <h1 className="page-title">Itinerario</h1>
+        <div>
+          <h1 className="page-title">Itinerario</h1>
+          {data.trips.find((t) => t.id === data.activeTripId)?.groupId && (
+            <p className="text-xs badge-ok mt-1">👥 Viaggio di gruppo · 🔗 sincronizzato in tempo reale</p>
+          )}
+        </div>
         <div className="flex gap-1.5">
           <button className="btn-gold !min-h-[40px] !py-1.5" onClick={addDay}>＋ Giornata</button>
           {data.days.length > 0 && (

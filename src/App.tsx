@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { NavLink, Route, Routes } from 'react-router-dom';
 import { useApp } from './state/AppStore';
+import { firebaseReady, subscribeGroup, stopsToDays, type GroupStop } from './services/group';
 import HomePage from './pages/HomePage';
 import ItineraryPage from './pages/ItineraryPage';
 import MapPage from './pages/MapPage';
@@ -42,6 +43,32 @@ function MorePage() {
   );
 }
 
+/** 🔗 Tiene il viaggio collegato al gruppo sempre aggiornato (in tempo reale, ad app aperta). */
+function GroupTripSync() {
+  const { data, update } = useApp();
+  const linked = data.trips.find((t) => t.groupId);
+  useEffect(() => {
+    if (!linked?.groupId || !firebaseReady()) return;
+    const off = subscribeGroup(
+      linked.groupId,
+      () => {},
+      (stops: GroupStop[]) => {
+        // aggiorna la copia personale ad ogni cambiamento del gruppo
+        update((d) => {
+          const t = d.trips.find((x) => x.id === linked.id);
+          if (!t) return {};
+          const days = stopsToDays(t.name.replace(' 👥', ''), stops, t.days);
+          const trips = d.trips.map((x) => (x.id === t.id ? { ...x, days } : x));
+          return t.id === d.activeTripId ? { trips, days } : { trips };
+        });
+      },
+      () => {}
+    );
+    return off;
+  }, [linked?.groupId, linked?.id]);
+  return null;
+}
+
 export default function App() {
   const { data } = useApp();
   const s = data.settings;
@@ -58,6 +85,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen pb-20">
+      <GroupTripSync />
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/itinerario" element={<ItineraryPage />} />

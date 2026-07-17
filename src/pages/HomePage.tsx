@@ -97,8 +97,8 @@ export default function HomePage() {
             return (
               <div key={t.id} className={`flex items-center gap-2 rounded-xl p-2 ${active ? 'bg-crema dark:bg-[#141C33]' : ''}`}>
                 <button className="flex-1 text-left" onClick={() => update({ days: t.days, activeTripId: t.id })}>
-                  <span className="font-semibold text-sm">🧭 {t.name}</span>
-                  <span className="block text-xs opacity-60">{t.days.length} giornate · {dates}</span>
+                  <span className="font-semibold text-sm">{t.groupId ? '👥' : '🧭'} {t.name}</span>
+                  <span className="block text-xs opacity-60">{t.days.length} giornate · {dates}{t.groupId ? ' · 🔗 sincronizzato col gruppo' : ''}</span>
                 </button>
                 {active
                   ? <span className="badge-ok shrink-0">Aperto</span>
@@ -131,12 +131,12 @@ export default function HomePage() {
             <>
               <Link to="/pianifica" className="btn-primary col-span-2 text-base">🌍 Pianifica un viaggio</Link>
               <Link to="/itinerario" className="btn-secondary">✏️ Crea a mano</Link>
-              <Link to="/valigia" className="btn-secondary">🧳 Valigia</Link>
+              <Link to="/gruppo" className="btn-secondary">👥 Viaggio di gruppo</Link>
             </>
           ) : (
             <>
               <button className="btn-primary col-span-2 text-base" onClick={() => nav('/itinerario')}>🥾 Zaino in spalla, si parte!</button>
-              <Link to="/itinerario" className="btn-secondary">🗓️ Itinerario</Link>
+              <Link to="/gruppo" className="btn-secondary">👥 Gruppo</Link>
               {geo.status === 'active' || geo.status === 'low-accuracy' || geo.status === 'stale' ? (
                 <button className="btn-secondary" onClick={geo.stop}>🛑 Disattiva GPS</button>
               ) : (

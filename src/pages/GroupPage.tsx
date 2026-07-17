@@ -7,10 +7,11 @@ import {
   firebaseReady, ensureUser, getDisplayName, setDisplayName,
   getSavedGroupId, leaveGroup, createGroup, joinGroup, subscribeGroup,
   addGroupStop, updateOwnStop, deleteOwnStop, requestChange, resolveRequest, generatePresentation,
-  addExpense, deleteExpense, computeBalances, settleUp,
+  addExpense, deleteExpense, computeBalances, settleUp, stopsToDays,
   type GroupInfo, type GroupStop, type ChangeRequest, type Member, type Expense,
 } from '../services/group';
 import { useApp } from '../state/AppStore';
+import { useNavigate } from 'react-router-dom';
 
 export default function GroupPage() {
   const [uid, setUid] = useState<string | null>(null);
@@ -21,7 +22,8 @@ export default function GroupPage() {
   const [requests, setRequests] = useState<ChangeRequest[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const { data } = useApp();
+  const { data, update } = useApp();
+  const nav = useNavigate();
   const [members, setMembers] = useState<Member[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   // form nota spese
@@ -179,6 +181,23 @@ export default function GroupPage() {
   const byDate: Record<string, GroupStop[]> = {};
   for (const s of stops) (byDate[s.date] ??= []).push(s);
 
+  const linkedTrip = data.trips.find((t) => t.groupId === groupId);
+  const linkTrip = () => {
+    if (!group || !groupId) return;
+    const existing = data.trips.find((t) => t.groupId === groupId);
+    const id = existing?.id ?? 'grp-' + groupId;
+    const days = stopsToDays(group.name, stops, existing?.days ?? []);
+    const trip = {
+      id, name: `${group.name} 👥`, destination: group.name, days,
+      createdAt: existing?.createdAt ?? new Date().toISOString(), groupId,
+    };
+    update({
+      trips: existing ? data.trips.map((t) => (t.id === id ? trip : t)) : [...data.trips, trip],
+      days, activeTripId: id,
+    });
+    nav('/itinerario');
+  };
+
   return (
     <div className="max-w-xl mx-auto p-4 space-y-4">
       <header className="flex items-start justify-between gap-2">
@@ -196,6 +215,20 @@ export default function GroupPage() {
       </header>
       <div className="azulejo-band" aria-hidden />
       {err && <p className="card text-sm text-red-700 dark:text-red-300" role="alert">{err}</p>}
+
+      <section className="card space-y-1.5">
+        {linkedTrip ? (
+          <>
+            <p className="text-sm"><span className="badge-ok">🔗 Collegato al tuo itinerario</span> — le tappe del gruppo si aggiornano da sole anche lì, con meteo, audioguide e navigatore.</p>
+            <button className="btn-secondary w-full !min-h-[42px]" onClick={linkTrip}>🗓️ Apri nell'itinerario</button>
+          </>
+        ) : (
+          <>
+            <button className="btn-gold w-full" onClick={linkTrip}>⬇️ Collega al mio itinerario</button>
+            <p className="text-xs opacity-60">Crea in "I miei viaggi" una copia che resta sincronizzata in tempo reale col gruppo: la apri come un itinerario normale (meteo dell'ora, audioguide, guide interne, navigatore), e le spunte "visitato" restano tue.</p>
+          </>
+        )}
+      </section>
 
       {myPending.length > 0 && (
         <section className="card border-oro space-y-2">

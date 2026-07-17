@@ -113,6 +113,7 @@ export interface Trip {
   destination?: string;
   days: Day[];
   createdAt: string;
+  groupId?: string;            // 🔗 se presente: specchio del Gruppo di viaggio
 }
 
 export interface Day {

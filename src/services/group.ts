@@ -237,6 +237,54 @@ export async function deleteOwnStop(groupId: string, stopId: string): Promise<vo
   await deleteDoc(doc(d, 'groups', groupId, 'stops', stopId));
 }
 
+// ---------- 🔗 Specchio gruppo → itinerario personale ----------
+
+import type { Day as PersonalDay, Stop as PersonalStop } from '../types';
+
+/**
+ * Converte le tappe del gruppo in giornate personali.
+ * - id stabili ('g-<idGruppo>') così spunte "visitato", guide interne e biglietti
+ *   personali SOPRAVVIVONO a ogni sincronizzazione;
+ * - le tappe aggiunte a mano nel viaggio collegato (non del gruppo) vengono mantenute.
+ */
+export function stopsToDays(groupName: string, stops: GroupStop[], prevDays: PersonalDay[]): PersonalDay[] {
+  const prevStops: Record<string, PersonalStop> = {};
+  for (const d of prevDays) for (const st of d.stops) prevStops[st.id] = st;
+
+  const byDate: Record<string, GroupStop[]> = {};
+  for (const s of stops) (byDate[s.date] ??= []).push(s);
+  const dates = new Set<string>([...Object.keys(byDate), ...prevDays.map((d) => d.date)]);
+
+  const days: PersonalDay[] = [...dates].sort().map((date) => {
+    const fromGroup: PersonalStop[] = (byDate[date] ?? []).map((g) => {
+      const prev = prevStops['g-' + g.id];
+      return {
+        ...(prev ?? { visited: false }),
+        id: 'g-' + g.id,
+        title: g.title,
+        time: g.time,
+        address: g.address,
+        coords: g.coords,
+        description: g.notes,
+        presentation: g.presentation || prev?.presentation,
+        visited: prev?.visited ?? false,
+      } as PersonalStop;
+    });
+    const prevDay = prevDays.find((d) => d.date === date);
+    const manual = (prevDay?.stops ?? []).filter((st) => !st.id.startsWith('g-'));
+    const merged = [...fromGroup, ...manual];
+    const withTime = merged.filter((s) => s.time).sort((a, b) => (a.time as string).localeCompare(b.time as string));
+    const noTime = merged.filter((s) => !s.time);
+    return {
+      id: prevDay?.id ?? 'gday-' + date,
+      date,
+      title: prevDay?.title && !prevDay.title.startsWith('Gruppo') ? prevDay.title : `Gruppo · ${groupName}`,
+      stops: [...withTime, ...noTime],
+    };
+  }).filter((d) => d.stops.length > 0);
+  return days;
+}
+
 // ---------- 💶 Nota spese di gruppo ----------
 
 export async function addExpense(groupId: string, desc: string, amount: number, splitWith: string[], place?: string): Promise<void> {

@@ -4,7 +4,7 @@ import { emptyData, loadData, saveData } from '../lib/storage';
 
 interface Store {
   data: AppData;
-  update: (patch: Partial<AppData>) => void;
+  update: (patch: Partial<AppData> | ((d: AppData) => Partial<AppData>)) => void;
   replaceAll: (next: AppData) => void;
 }
 
@@ -28,10 +28,12 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     () => ({
       data,
       update: (patch) => setData((d) => {
-        const next = { ...d, ...patch };
+        const p = typeof patch === 'function' ? patch(d) : patch;
+        const next = { ...d, ...p };
         // Salvataggio automatico: l'itinerario attivo resta sincronizzato col viaggio salvato
-        if (patch.days && next.activeTripId) {
-          next.trips = next.trips.map((t) => (t.id === next.activeTripId ? { ...t, days: patch.days as typeof t.days } : t));
+        // (ma non quando il patch aggiorna già trips da solo, come fa il sync del gruppo)
+        if (p.days && next.activeTripId && !p.trips) {
+          next.trips = next.trips.map((t) => (t.id === next.activeTripId ? { ...t, days: p.days as typeof t.days } : t));
         }
         return next;
       }),
