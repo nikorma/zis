@@ -137,4 +137,26 @@ body {
   .route > li.done::before { background: var(--menta); }
 
   .page-title { @apply font-display font-black text-3xl md:text-4xl tracking-tight; }
+
+  /* ✨ Animazioni */
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  @keyframes floaty { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-8px) rotate(3deg); } }
+  @keyframes shine { from { transform: translateX(-120%) rotate(14deg); } to { transform: translateX(340%) rotate(14deg); } }
+  .anim-rise { animation: rise 0.5s ease-out both; }
+  .anim-rise-1 { animation: rise 0.5s ease-out 0.08s both; }
+  .anim-rise-2 { animation: rise 0.5s ease-out 0.16s both; }
+  .anim-rise-3 { animation: rise 0.5s ease-out 0.24s both; }
+  .floaty { display: inline-block; animation: floaty 3s ease-in-out infinite; }
+  .hero-dusk .shine {
+    position: absolute; top: -30%; left: 0; width: 34px; height: 160%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+    animation: shine 3.5s ease-in-out 0.8s infinite;
+    pointer-events: none;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary, .btn-gold, .btn-secondary { transition: transform 0.12s ease, filter 0.12s ease, box-shadow 0.12s ease; }
+  .btn-primary:hover, .btn-gold:hover { transform: translateY(-1px); }
+  @media (prefers-reduced-motion: reduce) {
+    .anim-rise, .anim-rise-1, .anim-rise-2, .anim-rise-3, .floaty, .hero-dusk .shine { animation: none; }
+  }
 }

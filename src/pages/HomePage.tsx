@@ -62,7 +62,8 @@ export default function HomePage() {
 
   return (
     <div className="max-w-xl mx-auto p-4 space-y-4">
-      <header className="hero-dusk">
+      <header className="hero-dusk anim-rise">
+        <span className="shine" aria-hidden />
         <h1 className="font-display font-black text-3xl leading-none">Zaino <span className="text-oro">in Spalla</span></h1>
         <p className="opacity-75 text-sm mt-1">
           {day
@@ -88,7 +89,7 @@ export default function HomePage() {
       )}
 
       {data.trips.length > 0 && (
-        <section className="card space-y-2">
+        <section className="card space-y-2 anim-rise-1">
           <h2 className="font-display text-lg">🗺️ I miei viaggi</h2>
           {data.trips.map((t) => {
             const active = t.id === data.activeTripId;
@@ -117,8 +118,8 @@ export default function HomePage() {
       )}
 
       {data.days.length === 0 ? (
-        <section className="card space-y-3 text-center">
-          <p className="text-4xl" aria-hidden>🎒</p>
+        <section className="card space-y-3 text-center anim-rise-2">
+          <p className="text-5xl floaty" aria-hidden>🎒</p>
           <h2 className="font-display font-black text-xl">Il tuo prossimo viaggio parte da qui</h2>
           <p className="text-sm opacity-70">Crea l’itinerario in un minuto con il planner: verrà salvato qui automaticamente.</p>
           <div className="grid grid-cols-2 gap-2 pt-2 text-left">
@@ -129,7 +130,7 @@ export default function HomePage() {
           </div>
         </section>
       ) : (
-      <section className="card space-y-2">
+      <section className="card space-y-2 anim-rise-2">
         {day && <p className="text-sm font-semibold">{day.title}</p>}
         {!day && <p className="text-sm opacity-70">Oggi non ci sono tappe in programma: goditi la giornata o apri l’itinerario.</p>}
         {day && !next && <p className="text-sm opacity-70">Tutte le tappe di oggi sono state visitate. 🎉</p>}

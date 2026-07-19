@@ -29,7 +29,7 @@ export default async function handler(req, res) {
   if (String(image).length > 1_800_000) return res.status(400).json({ error: 'Foto troppo grande: riprova (l\u2019app dovrebbe ridurla da sola).' });
 
   const prompt = task === 'translate'
-    ? `Leggi TUTTO il testo presente nella foto (insegna, menù, cartello, etichetta…) e traducilo in ITALIANO.
+    ? `Leggi TUTTO il testo presente nella foto (insegna, menù, cartello, etichetta, pagina…) e traducilo in ITALIANO. Il testo può essere in QUALSIASI lingua e alfabeto (greco, cirillico, arabo, cinese…): leggilo con attenzione anche se la foto è inclinata o parziale.
 Formato: prima la traduzione chiara e ordinata; poi una riga "Testo originale (lingua):" con il testo letto.
 Se il testo è un menù, mantieni la struttura a voci. Se non c'è testo leggibile, dillo con gentilezza.`
     : `Sei ZainoInSpalla, guida di viaggio. Guarda la foto e spiega in ITALIANO cosa si vede (monumento, statua, piatto, oggetto, panorama…).
@@ -47,7 +47,7 @@ Dai 2-3 curiosità interessanti da guida. Se non riconosci il soggetto con certe
           role: 'user',
           content: [
             { type: 'text', text: prompt },
-            { type: 'image_url', image_url: { url: image, detail: 'low' } },
+            { type: 'image_url', image_url: { url: image, detail: 'high' } },
           ],
         }],
       }),

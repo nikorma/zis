@@ -112,6 +112,7 @@ out center 40;`;
     'https://overpass-api.de/api/interpreter',
     'https://overpass.kumi.systems/api/interpreter',
     'https://overpass.private.coffee/api/interpreter',
+    'https://overpass.osm.ch/api/interpreter',
   ];
   for (const base of MIRRORS) {
     if (list.length > 0) break;

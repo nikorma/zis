@@ -72,6 +72,7 @@ function StopDetails({ stop, date, onSave }: { stop: Stop; date: string; onSave:
   const [pt, setPt] = useState(0);
   const [wx, setWx] = useState<HourForecast | null>(null);
   const [finder, setFinder] = useState<null | 'ask' | 'loading' | FoodPlace[]>(null);
+  const [finderWhere, setFinderWhere] = useState<'te' | 'tappa'>('tappa');
 
   // 🌦️ Previsioni per l'ORA e il LUOGO della tappa (solo entro 7 giorni, sempre fresche)
   useEffect(() => {
@@ -96,8 +97,14 @@ function StopDetails({ stop, date, onSave }: { stop: Stop; date: string; onSave:
       );
     });
     const base = center ?? stop.coords;
+    setFinderWhere(center ? 'te' : 'tappa');
     if (!base) { setFinder([]); return; }
-    const r = await findRestaurants(base, alto);
+    let r = await findRestaurants(base, alto);
+    // se vicino a te non c'è nulla, riprovo vicino alla tappa
+    if (r.length === 0 && center && stop.coords) {
+      setFinderWhere('tappa');
+      r = await findRestaurants(stop.coords, alto);
+    }
     setFinder(r);
   };
 
@@ -192,7 +199,8 @@ function StopDetails({ stop, date, onSave }: { stop: Stop; date: string; onSave:
       {isFood && finder === 'loading' && <p className="text-sm opacity-70 animate-pulse">🍝 Annuso le cucine del quartiere…</p>}
       {isFood && Array.isArray(finder) && (
         <div className="space-y-2">
-          <p className="font-semibold text-sm">🍽️ Vicino a questa tappa ({finder.length}):</p>
+          <p className="font-semibold text-sm">🍽️ {finderWhere === 'te' ? 'Vicino a TE (posizione GPS)' : 'Vicino alla tappa'} ({finder.length}):</p>
+          {finderWhere === 'tappa' && <p className="text-[11px] opacity-60 -mt-1">💡 Per cercare vicino a te, consenti la posizione al browser quando la chiede.</p>}
           {finder.length === 0 && (
             <div className="text-sm opacity-80 space-y-2">
               <p>😕 Non ho trovato locali mappati qui vicino (o il servizio era momentaneamente pieno).</p>
