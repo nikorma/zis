@@ -85,9 +85,19 @@ function StopDetails({ stop, date, onSave }: { stop: Stop; date: string; onSave:
 
   const openFinder = () => setFinder('ask');
   const searchFood = async (alto: boolean) => {
-    if (!stop.coords) return;
     setFinder('loading');
-    const r = await findRestaurants(stop.coords, alto);
+    // 📍 Prima provo la TUA posizione (i ristoranti "vicino a me"); se non c'è, uso la tappa
+    const center = await new Promise<{ lat: number; lng: number } | null>((ok) => {
+      if (!navigator.geolocation) return ok(null);
+      navigator.geolocation.getCurrentPosition(
+        (p) => ok({ lat: p.coords.latitude, lng: p.coords.longitude }),
+        () => ok(null),
+        { enableHighAccuracy: true, timeout: 6000, maximumAge: 60000 }
+      );
+    });
+    const base = center ?? stop.coords;
+    if (!base) { setFinder([]); return; }
+    const r = await findRestaurants(base, alto);
     setFinder(r);
   };
 

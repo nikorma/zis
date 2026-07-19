@@ -56,6 +56,8 @@ ${wishlist}
 - ⚠️ REGOLA ANTI-INVENZIONE (fondamentale): se NON conosci con certezza un luogo, NON inventare MAI storia, collezioni o dettagli. In quel caso la description deve essere onesta: "Non ho informazioni verificate su questo luogo: controlla il nome." e aggiungi un avviso in "warnings".
 - Se un nome scritto dall'utente sembra un errore di battitura di un luogo famoso (es. "due tiri" → "Due Torri", "coloseo" → "Colosseo"), NON inventare: usa il luogo corretto come tappa e segnala in "warnings" (es. "Ho interpretato 'due tiri' come 'Due Torri di Bologna': dimmi se intendevi altro."). Se non riesci a interpretarlo, mettilo come tappa con la description onesta e chiedi chiarimento in "warnings".
 - "warnings" è un array di stringhe brevi in italiano; se non ce ne sono, metti [].
+- NON RIPETERE MAI la stessa attrazione o lo stesso luogo in giorni diversi dell'itinerario.
+- Meglio una descrizione breve e CERTA che una lunga e inventata: se di un luogo sai poco, di' solo ciò di cui sei sicuro.
 - Lingua: italiano. Se citi l'app, chiamala \"ZainoInSpalla\".`;
 
   const user = `Destinazione: ${destination}
@@ -73,7 +75,7 @@ ${notes ? 'Preferenze extra: ' + notes : ''}`;
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: process.env.OPENAI_MODEL || 'gpt-4o',
         max_tokens: 4000,
         temperature: 0.6,
         response_format: { type: 'json_object' },

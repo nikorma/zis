@@ -66,12 +66,7 @@ export default function SettingsPage() {
             <option value="auto">Automatico (sistema)</option>
           </select>
         </label>
-        <label className="label">Lingua dell’interfaccia
-          <select className="input" value={s.lang} onChange={(e) => setS({ lang: e.target.value as Lang })}>
-            {(Object.keys(LANG_NAMES) as Lang[]).map((l) => <option key={l} value={l}>{LANG_NAMES[l]}</option>)}
-          </select>
-        </label>
-        <p className="text-xs opacity-60">La struttura multilingua è pronta; i contenuti della guida sono per ora in italiano.</p>
+        <p className="text-sm">🌐 Lingua: <strong>Italiano</strong> <span className="text-xs opacity-60">(altre lingue in arrivo: il selettore tornerà quando le traduzioni saranno complete)</span></p>
       </section>
 
       <section className="card space-y-3">

@@ -48,7 +48,9 @@ export default function LensPage() {
         body: JSON.stringify({ image: photo, task }),
       });
       const j = await r.json().catch(() => ({}));
-      if (!r.ok) {
+      if (r.status === 404) {
+        setErr('Questa funzione non è ancora online: carica l\u2019ultimo zip su GitHub e attendi il deploy di Vercel.');
+      } else if (!r.ok) {
         setErr(j.error?.includes('non configurato')
           ? 'Questa funzione richiede il backend AI: aggiungi OPENAI_API_KEY su Vercel (vedi README).'
           : (j.error || 'Non ha funzionato: riprova.'));

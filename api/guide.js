@@ -35,14 +35,15 @@ Regole:
 - Ogni "text": 120-170 parole, in italiano, tono caldo, scritto per l'ASCOLTO: indica dove guardare ("alza lo sguardo...", "alla tua destra...").
 - Racconta storia, aneddoti e dettagli da osservare. NON inventare prezzi, orari o regole: se servono, di' di verificare sul posto.
 - Se il luogo non si visita all'interno (piazza, ponte, quartiere), fai i punti del percorso esterno.
-- Se non conosci il luogo con certezza, resta su ciò che è tipico e verificabile del genere di luogo, senza inventare nomi di opere.`;
+- Usa FATTI SPECIFICI e VERI del luogo (date, artisti, eventi storici) quando li conosci con certezza.
+- Se non conosci il luogo con certezza, dillo nel primo punto ("Non ho informazioni verificate su questo luogo") e resta sul verificabile, senza inventare nomi di opere, date o storie.`;
 
   try {
     const r = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: process.env.OPENAI_MODEL || 'gpt-4o',
         max_tokens: 3200,
         temperature: 0.7,
         response_format: { type: 'json_object' },
