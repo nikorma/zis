@@ -12,6 +12,7 @@ import {
 } from '../services/group';
 import { useApp } from '../state/AppStore';
 import { useNavigate } from 'react-router-dom';
+import { appConfirm } from '../lib/dialog';
 
 export default function GroupPage() {
   const [uid, setUid] = useState<string | null>(null);
@@ -98,7 +99,15 @@ export default function GroupPage() {
           </label>
         </div>
         <div className="card space-y-2">
-          <h2 className="font-display text-lg">Crea un nuovo gruppo</h2>
+          <h2 className="font-display text-lg">✨ Crea un viaggio di gruppo completo</h2>
+          <p className="text-sm opacity-70">Destinazione, date e orari → l'app genera l'itinerario con presentazioni e audioguide, crea il gruppo e ti dà il codice da mandare agli amici. Tutto in un colpo.</p>
+          <button className="btn-primary w-full" disabled={!name.trim()} onClick={() => { setDisplayName(name); sessionStorage.setItem('zaino-gflow', '1'); nav('/pianifica'); }}>
+            ✨ Crea viaggio di gruppo con itinerario automatico
+          </button>
+          {!name.trim() && <p className="text-xs opacity-60">Prima scrivi il tuo nome qui sopra.</p>}
+        </div>
+        <div className="card space-y-2">
+          <h2 className="font-display text-lg">➕ Oppure: gruppo vuoto</h2>
           <label className="label">Nome del viaggio
             <input className="input" value={gname} onChange={(e) => setGname(e.target.value)} placeholder="es. Atene 2026" />
           </label>
@@ -332,7 +341,7 @@ export default function GroupPage() {
                   </p>
                   <p className="text-[11px] opacity-60">Con: {e.splitWith.map(nameOf).join(', ')}</p>
                   {e.payerId === uid && (
-                    <button className="text-xs opacity-60 underline mt-1" onClick={() => { if (confirm('Eliminare questa spesa?')) deleteExpense(groupId, e).catch((er) => setErr(String((er as Error).message))); }}>🗑️ elimina</button>
+                    <button className="text-xs opacity-60 underline mt-1" onClick={async () => { if (await appConfirm(`Eliminare la spesa "${e.desc}" (€${e.amount.toFixed(2)})?`, 'Elimina', true)) deleteExpense(groupId, e).catch((er) => setErr(String((er as Error).message))); }}>🗑️ elimina</button>
                   )}
                 </div>
               ))}

@@ -6,6 +6,8 @@ import { googleMapsDirectionsUrl, type TravelMode } from '../lib/geo';
 import { generatePresentation } from '../services/group';
 import { geocodeOne, generateInteriorGuide, findRestaurants, type FoodPlace } from '../services/guidegen';
 import { hourForecast, forecastAvailable, type HourForecast } from '../services/forecast';
+import { appConfirm } from '../lib/dialog';
+import MapView from '../components/MapView';
 import { formatDistance } from '../lib/geo';
 import WorkingScreen from '../components/WorkingScreen';
 import { useApp } from '../state/AppStore';
@@ -321,6 +323,7 @@ export default function ItineraryPage() {
   const [dragFrom, setDragFrom] = useState<{ dayId: string; index: number } | null>(null);
   const [editingDay, setEditingDay] = useState<string | null>(null);
   const [openStop, setOpenStop] = useState<string | null>(null);
+  const [openMapDay, setOpenMapDay] = useState<string | null>(null);
 
   const setDays = (days: Day[]) => update({ days });
 
@@ -351,8 +354,8 @@ export default function ItineraryPage() {
             <button
               className="btn-ghost !min-h-[40px] !py-1.5 text-red-700 dark:text-red-300"
               aria-label="Elimina tutto l'itinerario"
-              onClick={() => {
-                if (confirm(`Eliminare TUTTO l'itinerario (${data.days.length} giornate)? Biglietti e impostazioni non vengono toccati.`) && confirm('Sicuro sicuro? Non si può annullare. 🎒')) {
+              onClick={async () => {
+                if (await appConfirm(`Eliminare TUTTO l'itinerario (${data.days.length} giornate)?\nNon si può annullare. Biglietti e impostazioni restano.`, 'Elimina tutto', true)) {
                   update({
                     days: [],
                     trips: data.trips.filter((t) => t.id !== data.activeTripId),
@@ -382,6 +385,28 @@ export default function ItineraryPage() {
                   {new Date(day.date + 'T12:00').toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })}
                 </h2>
                 <p className="text-sm opacity-80">{day.title}</p>
+                {day.stops.filter((st) => st.coords).length >= 2 && (
+                  <button className="btn-ghost !min-h-[32px] !py-0.5 !px-2 text-xs" onClick={() => setOpenMapDay(openMapDay === day.id ? null : day.id)}>
+                    {openMapDay === day.id ? '🗺️ Nascondi percorso ▲' : '🗺️ Anteprima percorso ▼'}
+                  </button>
+                )}
+                {openMapDay === day.id && (() => {
+                  const withCoords = day.stops.filter((st) => st.coords);
+                  return (
+                    <div className="mt-2">
+                      <MapView
+                        height="32vh"
+                        markers={withCoords.map((st, idx) => ({
+                          coords: st.coords as { lat: number; lng: number },
+                          label: `${st.time ? st.time + ' · ' : idx + 1 + '. '}${st.title}`,
+                          kind: 'stop' as const,
+                        }))}
+                        route={withCoords.map((st) => st.coords as { lat: number; lng: number })}
+                      />
+                      <p className="text-[11px] opacity-60 mt-1">Linea nell'ordine di visita. Le tappe senza posizione non compaiono: aprile una volta per agganciarla.</p>
+                    </div>
+                  );
+                })()}
                 {wakeTime() && day.stops.length > 0 && (
                   <p className="text-xs opacity-60">⏰ Sveglia consigliata: {wakeTime()} <span className="opacity-70">(impostala sul telefono: le app web non possono farlo da sole)</span></p>
                 )}
@@ -418,7 +443,9 @@ export default function ItineraryPage() {
                     <span className="cursor-grab select-none pt-1" aria-hidden title="Trascina per riordinare">⠿</span>
                     <div className="flex-1 min-w-0">
                       <button className="font-semibold text-left w-full" onClick={() => setOpenStop(openStop === s.id ? null : s.id)} aria-expanded={openStop === s.id}>
-                        {s.time && <span className="tabular-nums mr-2">{s.time}</span>}
+                        {s.time
+                          ? <span className="tabular-nums mr-2">{s.time}</span>
+                          : <span className="mr-2 inline-flex items-center justify-center w-6 h-6 rounded-full bg-terra text-white text-xs font-bold align-middle">{i + 1}</span>}
                         {s.title} <span className="opacity-40 text-xs">{openStop === s.id ? '▲' : '▼ tocca per guida e navigatore'}</span>
                       </button>
                       {s.description && <p className="text-sm opacity-80">{s.description}</p>}

@@ -17,7 +17,7 @@ const DEFAULT_MESSAGES = [
  * Schermata "sto lavorando" a tutto schermo, con messaggi spiritosi
  * che ruotano mentre l'AI prepara il risultato.
  */
-export default function WorkingScreen({ title = 'Preparo il tuo itinerario…', messages = DEFAULT_MESSAGES }: { title?: string; messages?: string[] }) {
+export default function WorkingScreen({ title = 'Preparo il tuo itinerario…', messages = DEFAULT_MESSAGES, progress }: { title?: string; messages?: string[]; progress?: string }) {
   const [i, setI] = useState(0);
   const [visible, setVisible] = useState(true);
 
@@ -38,6 +38,7 @@ export default function WorkingScreen({ title = 'Preparo il tuo itinerario…', 
     >
       <div className="text-7xl animate-bounce" aria-hidden>🎒</div>
       <h2 className="font-display font-black text-2xl">{title}</h2>
+      {progress && <p className="text-sm font-semibold text-oro">📦 {progress}</p>}
       <p
         className="min-h-[3.5rem] text-lg opacity-90 transition-opacity duration-300"
         style={{ opacity: visible ? 1 : 0 }}

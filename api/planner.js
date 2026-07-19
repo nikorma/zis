@@ -8,6 +8,8 @@
 const hourly = new Map();
 const MAX_PER_HOUR = 10; // generare un itinerario costa più di una domanda
 
+export const config = { maxDuration: 60 };
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -27,21 +29,23 @@ export default async function handler(req, res) {
 
   const {
     destination, startDate, endDate, checkinTime, checkoutTime,
-    afternoonBreak, lunchOut, dinnerOut, notes, mealTimes, mode, wishlist,
+    afternoonBreak, lunchOut, dinnerOut, notes, mealTimes, mode, wishlist, timeMode,
+    tripStart, tripEnd, partIndex, partTotal, usedPlaces,
   } = req.body || {};
+  const multiPart = partTotal && partTotal > 1;
   const mt = { wake: '07:30', breakfast: '08:00', lunch: '13:00', dinner: '20:30', ...(mealTimes || {}) };
   if (!destination || !startDate || !endDate) {
     return res.status(400).json({ error: 'Servono destinazione e date.' });
   }
 
   const system = `Sei un travel planner esperto. Rispondi ESCLUSIVAMENTE con JSON valido, senza testo attorno, senza markdown.
-Schema: {"days":[{"date":"YYYY-MM-DD","title":"...","stops":[{"title":"...","time":"HH:MM","durationMinutes":60,"description":"2-3 frasi ricche e interessanti (storia/cosa vedere)","address":"via o zona (se nota)","paid":true|false,"officialSite":"URL ufficiale SOLO se ne sei certo, altrimenti null"}]}]}
+Schema: {"days":[{"date":"YYYY-MM-DD","title":"...","stops":[{"title":"...","time":"HH:MM","durationMinutes":60,"description":"2-3 frasi ricche e interessanti (storia/cosa vedere)","address":"via o zona (se nota)","paid":true|false,"officialSite":"URL ufficiale SOLO se ne sei certo, altrimenti null"}]}],"warnings":["eventuali avvisi per l'utente"]}
 Regole:
 - Una voce in "days" per OGNI giorno dal check-in al check-out inclusi.
 - Il primo giorno inizia DOPO l'orario di check-in; l'ultimo finisce PRIMA del check-out.
 - ${afternoonBreak ? 'Inserisci ogni giorno una pausa/riposo tra le 14 e le 17 (tappa "Pausa pomeridiana").' : 'Giornate continue, SENZA pausa pomeridiana.'}
-- ORARI DELL'UTENTE (rispettali con precisione): sveglia ${mt.wake}, colazione ${mt.breakfast}, pranzo ${mt.lunch}, cena ${mt.dinner}.
-- La prima tappa di ogni giornata inizia circa 45 minuti dopo la colazione (mai prima).
+${timeMode === 'ordine' ? `- MODALITÀ ORDINE DI VISITA: NON assegnare orari — ometti del tutto il campo "time" (o mettilo null). Ordina le tappe nella sequenza di visita migliore (geografica); pranzo e cena vanno nella posizione giusta della sequenza, senza orario.` : `- ORARI DELL'UTENTE (rispettali con precisione): sveglia ${mt.wake}, colazione ${mt.breakfast}, pranzo ${mt.lunch}, cena ${mt.dinner}.
+- La prima tappa di ogni giornata inizia circa 45 minuti dopo la colazione (mai prima).`}
 - ${lunchOut ? `Includi ogni giorno una tappa PRANZO alle ${mt.lunch} in punto (indica il tipo di locale, non inventare nomi se non sei certo).` : 'NON pianificare pranzi fuori, ma lascia libera la fascia del pranzo.'}
 - ${dinnerOut ? `Includi ogni giorno una tappa CENA alle ${mt.dinner} in punto.` : 'NON pianificare cene fuori.'}
 ${mode === 'manuale' && wishlist ? `- L'UTENTE HA SCELTO LUI cosa vedere. Usa ESATTAMENTE questi luoghi come tappe (tutti, senza aggiungerne altri di visita):
@@ -49,10 +53,19 @@ ${wishlist}
   Distribuiscili tra i giorni e ORDINALI PER VICINANZA GEOGRAFICA (percorsi sensati, meno spostamenti possibili). Aggiungi solo pasti/pause secondo le regole sopra.` : '- Tappe realistiche e vicine tra loro, ordine geografico sensato, 4-7 tappe al giorno.'}
 - "paid": true se serve un biglietto d'ingresso, false se gratuito; NON inventare mai prezzi od orari.
 - "officialSite": SOLO il dominio ufficiale se ne sei assolutamente certo (es. museo molto famoso); in dubbio metti null.
+- ⚠️ REGOLA ANTI-INVENZIONE (fondamentale): se NON conosci con certezza un luogo, NON inventare MAI storia, collezioni o dettagli. In quel caso la description deve essere onesta: "Non ho informazioni verificate su questo luogo: controlla il nome." e aggiungi un avviso in "warnings".
+- Se un nome scritto dall'utente sembra un errore di battitura di un luogo famoso (es. "due tiri" → "Due Torri", "coloseo" → "Colosseo"), NON inventare: usa il luogo corretto come tappa e segnala in "warnings" (es. "Ho interpretato 'due tiri' come 'Due Torri di Bologna': dimmi se intendevi altro."). Se non riesci a interpretarlo, mettilo come tappa con la description onesta e chiedi chiarimento in "warnings".
+- "warnings" è un array di stringhe brevi in italiano; se non ce ne sono, metti [].
 - Lingua: italiano. Se citi l'app, chiamala \"ZainoInSpalla\".`;
 
   const user = `Destinazione: ${destination}
-Periodo: dal ${startDate} (check-in ore ${checkinTime || '15:00'}) al ${endDate} (check-out ore ${checkoutTime || '10:00'})
+${multiPart
+  ? `Questo è il BLOCCO ${partIndex}/${partTotal} di un viaggio lungo (dal ${tripStart} al ${tripEnd}). Genera SOLO i giorni dal ${startDate} al ${endDate}, compresi.
+${startDate === tripStart ? `Il ${tripStart} c'è l'arrivo: prima tappa dopo il check-in delle ${checkinTime || '15:00'}.` : ''}
+${endDate === tripEnd ? `Il ${tripEnd} c'è la partenza: check-out ore ${checkoutTime || '10:00'}, solo attività leggere prima.` : ''}
+${Array.isArray(usedPlaces) && usedPlaces.length ? `NON RIPETERE questi luoghi già programmati nei blocchi precedenti: ${usedPlaces.join('; ')}.` : ''}
+Varia i quartieri e il ritmo rispetto ai blocchi precedenti; per soggiorni lunghi inserisci anche giornate più rilassate o gite nei dintorni.`
+  : `Periodo: dal ${startDate} (check-in ore ${checkinTime || '15:00'}) al ${endDate} (check-out ore ${checkoutTime || '10:00'})`}
 ${notes ? 'Preferenze extra: ' + notes : ''}`;
 
   try {
@@ -61,7 +74,7 @@ ${notes ? 'Preferenze extra: ' + notes : ''}`;
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
         model: 'gpt-4o-mini',
-        max_tokens: 3500,
+        max_tokens: 4000,
         temperature: 0.6,
         response_format: { type: 'json_object' },
         messages: [

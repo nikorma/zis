@@ -297,6 +297,11 @@ export function stopsToDays(groupName: string, stops: GroupStop[], prevDays: Per
 
 // ---------- 💶 Nota spese di gruppo ----------
 
+/** uid dell'utente corrente (se già autenticato). */
+export function getCurrentUid(): string | null {
+  try { return app ? getAuth(app).currentUser?.uid ?? null : null; } catch { return null; }
+}
+
 export async function addExpense(groupId: string, desc: string, amount: number, splitWith: string[], place?: string): Promise<void> {
   const d = ensure();
   const user = await ensureUser();

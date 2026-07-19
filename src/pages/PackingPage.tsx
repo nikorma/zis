@@ -5,6 +5,7 @@ import {
 } from '../services/packing';
 import PlaceSearch from '../components/PlaceSearch';
 import MapView from '../components/MapView';
+import { appConfirm } from '../lib/dialog';
 
 const LS_CASES = 'zaino-valigie-v1';
 const LS_OLD = 'zaino-packing-v1';
@@ -101,8 +102,8 @@ export default function PackingPage() {
     setChecked(new Set());
   };
 
-  const deleteCase = (id: string) => {
-    if (!confirm(`Eliminare la valigia "${cases[id]?.name}"?`)) return;
+  const deleteCase = async (id: string) => {
+    if (!(await appConfirm(`Eliminare la valigia "${cases[id]?.name}"?`, 'Elimina', true))) return;
     const next = { ...cases };
     delete next[id];
     setCases(next);

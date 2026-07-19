@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../state/AppStore';
+import { appConfirm } from '../lib/dialog';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { dayForDate, nextStop } from '../lib/itinerary';
 import { distanceMeters, formatDistance, nearestTarget, googleMapsDirectionsUrl, clampRadius } from '../lib/geo';
@@ -103,8 +104,8 @@ export default function HomePage() {
                 {active
                   ? <span className="badge-ok shrink-0">Aperto</span>
                   : <button className="btn-secondary !min-h-[36px] !py-1 text-sm shrink-0" onClick={() => update({ days: t.days, activeTripId: t.id })}>Apri</button>}
-                <button className="btn-ghost !min-h-[36px] !py-1 !px-2 shrink-0" aria-label="Elimina viaggio" onClick={() => {
-                  if (confirm(`Eliminare il viaggio "${t.name}"?`)) {
+                <button className="btn-ghost !min-h-[36px] !py-1 !px-2 shrink-0" aria-label="Elimina viaggio" onClick={async () => {
+                  if (await appConfirm(`Eliminare il viaggio "${t.name}"?\nLe sue giornate e tappe andranno perse.`, 'Elimina', true)) {
                     const trips = data.trips.filter((x) => x.id !== t.id);
                     update(active ? { trips, days: [], activeTripId: undefined } : { trips });
                   }
@@ -143,6 +144,7 @@ export default function HomePage() {
             <>
               <button className="btn-primary col-span-2 text-base" onClick={() => nav('/itinerario')}>🥾 Zaino in spalla, si parte!</button>
               <Link to="/gruppo" className="btn-secondary">👥 Gruppo</Link>
+              <Link to="/occhio" className="btn-secondary col-span-2">📸 Occhio di viaggio (traduci / riconosci)</Link>
               {geo.status === 'active' || geo.status === 'low-accuracy' || geo.status === 'stale' ? (
                 <button className="btn-secondary" onClick={geo.stop}>🛑 Disattiva GPS</button>
               ) : (

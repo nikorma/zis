@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
 import { NavLink, Route, Routes } from 'react-router-dom';
 import { useApp } from './state/AppStore';
-import { firebaseReady, subscribeGroup, stopsToDays, type GroupStop } from './services/group';
+import { firebaseReady, subscribeGroup, stopsToDays, getCurrentUid, type GroupStop, type Expense } from './services/group';
+import { useEffect, useRef } from 'react';
 import HomePage from './pages/HomePage';
 import ItineraryPage from './pages/ItineraryPage';
 import MapPage from './pages/MapPage';
@@ -11,6 +11,7 @@ import AdminPage from './pages/AdminPage';
 import PrivacyPage from './pages/PrivacyPage';
 import GroupPage from './pages/GroupPage';
 import PlannerPage from './pages/PlannerPage';
+import LensPage from './pages/LensPage';
 import PackingPage from './pages/PackingPage';
 
 const NAV = [
@@ -23,6 +24,7 @@ const NAV = [
 
 function MorePage() {
   const main = [
+    { to: '/occhio', label: '📸 Occhio di viaggio (traduci e riconosci)' },
     { to: '/valigia', label: '🧳 Valigia intelligente' },
     { to: '/gruppo', label: '👥 Gruppo di viaggio (itinerario condiviso)' },
     { to: '/assistente', label: '💬 Chiedi alla guida' },
@@ -47,6 +49,7 @@ function MorePage() {
 function GroupTripSync() {
   const { data, update } = useApp();
   const linked = data.trips.find((t) => t.groupId);
+  const seenExpenses = useRef<Set<string> | null>(null);
   useEffect(() => {
     if (!linked?.groupId || !firebaseReady()) return;
     const off = subscribeGroup(
@@ -62,7 +65,29 @@ function GroupTripSync() {
           return t.id === d.activeTripId ? { trips, days } : { trips };
         });
       },
-      () => {}
+      () => {},
+      undefined,
+      (expenses: Expense[]) => {
+        // 💶 Notifica: nuova spesa che mi riguarda (ad app aperta)
+        const uid = getCurrentUid();
+        if (seenExpenses.current === null) {
+          seenExpenses.current = new Set(expenses.map((e) => e.id)); // primo giro: niente notifiche sul pregresso
+          return;
+        }
+        for (const e of expenses) {
+          if (seenExpenses.current.has(e.id)) continue;
+          seenExpenses.current.add(e.id);
+          if (!uid || e.payerId === uid || !e.splitWith.includes(uid)) continue;
+          const share = (e.amount / Math.max(1, e.splitWith.length)).toFixed(2);
+          const msg = `${e.payerName} ha pagato €${e.amount.toFixed(2)} per "${e.desc}"${e.place ? ' (' + e.place + ')' : ''}. La tua quota: €${share}`;
+          try { navigator.vibrate?.([120, 60, 120]); } catch { /* niente */ }
+          try {
+            if ('Notification' in window && Notification.permission === 'granted') {
+              new Notification('💶 Nuova spesa nel gruppo', { body: msg, icon: './icons/icon-192.png' });
+            }
+          } catch { /* niente */ }
+        }
+      }
     );
     return off;
   }, [linked?.groupId, linked?.id]);
@@ -97,6 +122,7 @@ export default function App() {
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/gruppo" element={<GroupPage />} />
         <Route path="/pianifica" element={<PlannerPage />} />
+        <Route path="/occhio" element={<LensPage />} />
         <Route path="/valigia" element={<PackingPage />} />
         <Route path="/altro" element={<MorePage />} />
       </Routes>

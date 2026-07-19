@@ -4,7 +4,7 @@ import { useApp } from '../state/AppStore';
 import PlaceSearch, { type FoundPlace } from '../components/PlaceSearch';
 import { uid } from '../lib/itinerary';
 import type { Day, Stop, Trip } from '../types';
-import { firebaseReady, getSavedGroupId, addGroupStop } from '../services/group';
+import { firebaseReady, getSavedGroupId, addGroupStop, createGroup, type GroupInfo } from '../services/group';
 import WorkingScreen from '../components/WorkingScreen';
 
 interface PlanStop { title: string; time?: string; durationMinutes?: number; description?: string; address?: string; paid?: boolean | null; officialSite?: string | null }
@@ -30,6 +30,11 @@ export default function PlannerPage() {
   const [checkout, setCheckout] = useState('10:00');
   const [notes, setNotes] = useState('');
   const [mode, setMode] = useState<'auto' | 'manuale'>('auto');
+  const [timeMode, setTimeMode] = useState<'orari' | 'ordine'>('orari');
+  const [groupFlow] = useState<boolean>(() => sessionStorage.getItem('zaino-gflow') === '1');
+  const [newGroup, setNewGroup] = useState<GroupInfo | null>(null);
+  const [warnings, setWarnings] = useState<string[]>([]);
+  const [progress, setProgress] = useState<string>('');
   const [wishlist, setWishlist] = useState('');
 
   // Passo 2: le DOMANDE OBBLIGATORIE prima di generare
@@ -49,24 +54,51 @@ export default function PlannerPage() {
 
   const generate = async () => {
     localStorage.setItem(MEAL_LS, JSON.stringify(meals));
-    setBusy(true); setErr(null); setPlan(null);
+    setBusy(true); setErr(null); setPlan(null); setProgress('');
     try {
-      const res = await fetch('/api/planner', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          destination: destPicked ? `${destPicked.name} (${destPicked.address})` : dest,
-          startDate: start, endDate: end,
-          checkinTime: checkin, checkoutTime: checkout,
-          afternoonBreak: siesta, lunchOut, dinnerOut, notes,
-          mealTimes: meals,
-          mode, wishlist: mode === 'manuale' ? wishlist : undefined,
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Generazione non riuscita');
-      const generated = json.days as PlanDay[];
+      // 📦 Viaggi lunghi: si genera a blocchi di 6 giorni (l'AI non regge un mese in un colpo)
+      const addDays = (iso: string, n: number) => {
+        const d = new Date(iso + 'T12:00'); d.setDate(d.getDate() + n);
+        return d.toISOString().slice(0, 10);
+      };
+      const totalDays = Math.round((new Date(end).getTime() - new Date(start).getTime()) / 86400000) + 1;
+      const CHUNK = 6;
+      const parts: { s: string; e: string }[] = [];
+      for (let off = 0; off < totalDays; off += CHUNK) {
+        parts.push({ s: addDays(start, off), e: addDays(start, Math.min(off + CHUNK - 1, totalDays - 1)) });
+      }
+
+      const generated: PlanDay[] = [];
+      const allWarnings: string[] = [];
+      const usedPlaces: string[] = [];
+      for (let i = 0; i < parts.length; i++) {
+        if (parts.length > 1) setProgress(`Blocco ${i + 1} di ${parts.length} · giorni ${parts[i].s.slice(8)}–${parts[i].e.slice(8)}`);
+        const res = await fetch('/api/planner', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            destination: destPicked ? `${destPicked.name} (${destPicked.address})` : dest,
+            startDate: parts[i].s, endDate: parts[i].e,
+            checkinTime: checkin, checkoutTime: checkout,
+            afternoonBreak: siesta, lunchOut, dinnerOut, notes,
+            mealTimes: meals,
+            mode, wishlist: mode === 'manuale' ? wishlist : undefined,
+            timeMode,
+            tripStart: start, tripEnd: end,
+            partIndex: i + 1, partTotal: parts.length,
+            usedPlaces: usedPlaces.slice(-60),
+          }),
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || `Generazione non riuscita (blocco ${i + 1}/${parts.length})`);
+        const days = json.days as PlanDay[];
+        generated.push(...days);
+        if (Array.isArray(json.warnings)) allWarnings.push(...(json.warnings as string[]));
+        for (const d of days) for (const st of d.stops) usedPlaces.push(st.title);
+      }
+      setProgress('');
       setPlan(generated);
+      setWarnings(allWarnings.slice(0, 8));
       // 💾 Salvataggio automatico tra "I miei viaggi" (e diventa l'itinerario aperto)
       const days = toDaysFrom(generated);
       const trip: Trip = {
@@ -76,6 +108,19 @@ export default function PlannerPage() {
         days,
         createdAt: new Date().toISOString(),
       };
+      if (groupFlow && firebaseReady()) {
+        // 👥 Flusso unico: crea il gruppo, invia tutte le tappe (con presentazioni), collega il viaggio
+        try {
+          const g = await createGroup(`Viaggio a ${destPicked?.name ?? dest}`, start, end);
+          for (const d of generated) for (const st of d.stops) {
+            await addGroupStop(g.id, { title: st.title, date: d.date, time: st.time, address: st.address, notes: st.description }, st.description || st.title);
+          }
+          trip.groupId = g.id;
+          trip.name = `${destPicked?.name ?? dest} 👥`;
+          setNewGroup(g);
+          sessionStorage.removeItem('zaino-gflow');
+        } catch (e) { setErr('Itinerario creato, ma il gruppo no: ' + String((e as Error).message)); }
+      }
       update({ trips: [...data.trips, trip], days, activeTripId: trip.id });
       setStep(3);
     } catch (e) {
@@ -140,9 +185,10 @@ export default function PlannerPage() {
 
   return (
     <div className="max-w-xl mx-auto p-4 space-y-4">
-      {busy && !plan && <WorkingScreen />}
+      {busy && !plan && <WorkingScreen progress={progress} />}
       <h1 className="page-title">Pianifica un viaggio</h1>
       <div className="azulejo-band" aria-hidden />
+      {groupFlow && !newGroup && <p className="badge-warn !flex w-full justify-center">👥 Stai creando un VIAGGIO DI GRUPPO: alla fine avrai anche il codice da mandare agli amici</p>}
       <p className="text-sm opacity-80">Qualsiasi destinazione: dimmi periodo, orari e luogo — al resto pensa la guida. 🌍</p>
       {err && <p className="card text-sm text-red-700 dark:text-red-300" role="alert">{err}</p>}
 
@@ -161,6 +207,14 @@ export default function PlannerPage() {
             <label className="label">Partenza<input className="input" type="date" value={end} onChange={(e) => setEnd(e.target.value)} /></label>
             <label className="label">Orario check-in<input className="input" type="time" value={checkin} onChange={(e) => setCheckin(e.target.value)} /></label>
             <label className="label">Orario check-out<input className="input" type="time" value={checkout} onChange={(e) => setCheckout(e.target.value)} /></label>
+          </div>
+          <div className="space-y-1">
+            <p className="label !mb-0">🕘 Come vuoi le tappe?</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button className={timeMode === 'orari' ? 'chip-on justify-center !py-2' : 'chip-off justify-center !py-2'} onClick={() => setTimeMode('orari')}>⏰ Con orari precisi</button>
+              <button className={timeMode === 'ordine' ? 'chip-on justify-center !py-2' : 'chip-off justify-center !py-2'} onClick={() => setTimeMode('ordine')}>🔢 Solo ordine di visita</button>
+            </div>
+            {timeMode === 'ordine' && <p className="text-xs opacity-60">Niente orologio: tappe numerate 1, 2, 3… nell'ordine migliore. Pranzo e cena restano al posto giusto della sequenza.</p>}
           </div>
           <div className="space-y-1">
             <p className="label !mb-0">Chi sceglie le cose da vedere?</p>
@@ -226,7 +280,26 @@ export default function PlannerPage() {
               </div>
             ))}
           </section>
+          {warnings.length > 0 && (
+            <section className="card border-2 border-oro bg-oro-tenue/30 dark:bg-oro/10 space-y-1" role="alert">
+              <p className="font-display font-bold">🤔 Da controllare</p>
+              {warnings.map((w, i) => <p key={i} className="text-sm">⚠️ {w}</p>)}
+              <p className="text-xs opacity-70">Se qualcosa non torna, premi "Rigenera con altre scelte" e correggi la lista.</p>
+            </section>
+          )}
           <section className="card space-y-2">
+            {newGroup && (
+              <div className="rounded-xl border-2 border-oro p-3 space-y-1.5 text-center">
+                <p className="font-display font-bold">👥 Gruppo creato!</p>
+                <p className="text-sm">Codice invito: <strong className="font-mono text-lg">{newGroup.code}</strong></p>
+                <button className="btn-gold w-full !min-h-[42px]" onClick={() => {
+                  const txt = `🎒 Unisciti al nostro viaggio su ZainoInSpalla!\nApri ${location.origin} → Gruppo → Entra con il codice: ${newGroup.code}`;
+                  if (navigator.share) navigator.share({ text: txt }).catch(() => {});
+                  else navigator.clipboard.writeText(txt).then(() => alert('Invito copiato!'));
+                }}>📤 Invita gli amici</button>
+                <p className="text-[11px] opacity-60">L'itinerario è già nel gruppo con presentazioni e audioguide, e collegato al tuo itinerario personale.</p>
+              </div>
+            )}
             <p className="badge-ok !flex w-full justify-center">✅ Salvato automaticamente in "I miei viaggi" (lo trovi nella Home)</p>
             <div className="grid grid-cols-2 gap-2">
               <button className="btn-primary" onClick={() => nav('/itinerario')}>🗓️ Apri l’itinerario</button>
