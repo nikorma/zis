@@ -122,7 +122,7 @@ export default function HomePage() {
           <p className="text-5xl floaty" aria-hidden>🎒</p>
           <h2 className="font-display font-black text-xl">Il tuo prossimo viaggio parte da qui</h2>
           <p className="text-sm opacity-70">Crea l’itinerario in un minuto con il planner: verrà salvato qui automaticamente.</p>
-          <div className="grid grid-cols-2 gap-2 pt-2 text-left">
+          <div className="grid grid-cols-2 gap-2 pt-2 text-left stagger-lr">
             <Link to="/pianifica" className="btn-primary col-span-2 text-base justify-center">🌍 Pianifica un viaggio</Link>
             <Link to="/itinerario" className="btn-secondary justify-center">✏️ Crea a mano</Link>
             <Link to="/gruppo" className="btn-secondary justify-center">👥 Viaggio di gruppo</Link>
@@ -134,7 +134,7 @@ export default function HomePage() {
         {day && <p className="text-sm font-semibold">{day.title}</p>}
         {!day && <p className="text-sm opacity-70">Oggi non ci sono tappe in programma: goditi la giornata o apri l’itinerario.</p>}
         {day && !next && <p className="text-sm opacity-70">Tutte le tappe di oggi sono state visitate. 🎉</p>}
-        <div className="grid grid-cols-2 gap-2 pt-2">
+        <div className="grid grid-cols-2 gap-2 pt-2 stagger-lr">
           {data.days.length === 0 ? (
             <>
               <Link to="/pianifica" className="btn-primary col-span-2 text-base">🌍 Pianifica un viaggio</Link>
