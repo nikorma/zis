@@ -167,6 +167,18 @@ body {
   .stagger-lr > *:nth-child(5) { animation-delay: 0.55s; }
   .stagger-lr > *:nth-child(6) { animation-delay: 0.65s; }
 
+  @keyframes logoPop { 0% { opacity: 0; transform: scale(0.5); } 60% { transform: scale(1.08); } 100% { opacity: 1; transform: scale(1); } }
+  @keyframes splashOut { to { opacity: 0; visibility: hidden; } }
+  .splash {
+    position: fixed; inset: 0; z-index: 4000;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    background: linear-gradient(150deg, #1E2A4A 0%, #2A3A63 55%, #4A3560 100%);
+    animation: splashOut 0.45s ease 1.6s forwards;
+  }
+  .splash img { width: 96px; height: 96px; border-radius: 24px; animation: logoPop 0.7s ease-out both; box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
+  .splash h1 { animation: rise 0.5s ease-out 0.35s both; }
+  .splash p { animation: rise 0.5s ease-out 0.55s both; }
+
   @media (prefers-reduced-motion: reduce) {
     .anim-rise, .anim-rise-1, .anim-rise-2, .anim-rise-3, .floaty, .hero-dusk .shine,
     .stagger-lr > * { animation: none; }

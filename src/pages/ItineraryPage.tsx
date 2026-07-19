@@ -61,7 +61,7 @@ const MODES: { v: TravelMode; label: string }[] = [
 
 const FOOD_RE = /ristorant|trattor|pizzer|oster|taverna|pranz|cena|colazion|brunch|aperitiv|mangiare|tapas|bistro|sushi|kebab|street ?food|gelater|panin|bar\b/i;
 
-function StopDetails({ stop, date, onSave }: { stop: Stop; date: string; onSave: (patch: Partial<Stop>) => void }) {
+function StopDetails({ stop, date, dayCoords, onSave }: { stop: Stop; date: string; dayCoords?: { lat: number; lng: number }; onSave: (patch: Partial<Stop>) => void }) {
   const isFood = FOOD_RE.test(stop.title) || FOOD_RE.test(stop.description ?? '');
   const [mode, setMode] = useState<TravelMode>('walking');
   const [gen, setGen] = useState(false);
@@ -96,7 +96,7 @@ function StopDetails({ stop, date, onSave }: { stop: Stop; date: string; onSave:
         { enableHighAccuracy: true, timeout: 6000, maximumAge: 60000 }
       );
     });
-    const base = center ?? stop.coords;
+    const base = center ?? stop.coords ?? dayCoords;
     setFinderWhere(center ? 'te' : 'tappa');
     if (!base) { setFinder([]); return; }
     let r = await findRestaurants(base, alto);
@@ -203,7 +203,7 @@ function StopDetails({ stop, date, onSave }: { stop: Stop; date: string; onSave:
           {finderWhere === 'tappa' && <p className="text-[11px] opacity-60 -mt-1">💡 Per cercare vicino a te, consenti la posizione al browser quando la chiede.</p>}
           {finder.length === 0 && (
             <div className="text-sm opacity-80 space-y-2">
-              <p>😕 Non ho trovato locali mappati qui vicino (o il servizio era momentaneamente pieno).</p>
+              <p>😕 Non ho trovato locali: {(!stop.coords && finderWhere === 'tappa') ? 'questa tappa non ha una posizione (aprila e lascia che la agganci, o consenti il GPS).' : 'zona senza locali mappati o servizio momentaneamente pieno.'}</p>
               <div className="flex gap-2">
                 <button className="btn-secondary !min-h-[38px] !py-1 text-sm" onClick={() => setFinder('ask')}>🔄 Riprova</button>
                 <a className="btn-secondary !min-h-[38px] !py-1 text-sm" target="_blank" rel="noreferrer"
@@ -497,7 +497,7 @@ export default function ItineraryPage() {
                   </div>
                   {editing === s.id && <div className="mt-2"><StopEditor day={day} stop={s} onClose={() => setEditing(null)} /></div>}
                   {openStop === s.id && (
-                    <StopDetails stop={s} date={day.date} onSave={(patch) => setDays(it.updateStop(data.days, day.id, s.id, patch))} />
+                    <StopDetails stop={s} date={day.date} dayCoords={day.stops.find((x) => x.coords)?.coords} onSave={(patch) => setDays(it.updateStop(data.days, day.id, s.id, patch))} />
                   )}
                 </li>
               );

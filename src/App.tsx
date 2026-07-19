@@ -1,7 +1,7 @@
 import { NavLink, Route, Routes } from 'react-router-dom';
 import { useApp } from './state/AppStore';
 import { firebaseReady, subscribeGroup, stopsToDays, getCurrentUid, type GroupStop, type Expense } from './services/group';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import HomePage from './pages/HomePage';
 import ItineraryPage from './pages/ItineraryPage';
 import MapPage from './pages/MapPage';
@@ -94,6 +94,19 @@ function GroupTripSync() {
   return null;
 }
 
+function Splash() {
+  const [gone, setGone] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setGone(true), 2200); return () => clearTimeout(t); }, []);
+  if (gone) return null;
+  return (
+    <div className="splash" aria-hidden>
+      <img src="./icons/icon-192.png" alt="" />
+      <h1 className="font-display font-black text-3xl text-[#FDF6EA]">Zaino <span className="text-oro">in Spalla</span></h1>
+      <p className="text-sm text-[#FDF6EA] opacity-70">Il tuo compagno di viaggio</p>
+    </div>
+  );
+}
+
 export default function App() {
   const { data } = useApp();
   const s = data.settings;
@@ -110,6 +123,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen pb-20">
+      <Splash />
       <GroupTripSync />
       <Routes>
         <Route path="/" element={<HomePage />} />
