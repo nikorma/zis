@@ -127,9 +127,14 @@ export default function GroupPage() {
         </div>
         <div className="card space-y-2">
           <h2 className="font-display text-lg">Entra con un codice</h2>
-          <JoinForm disabled={busy || !name.trim()} onJoin={async (code) => {
+          <p className="text-xs opacity-60">Codici <strong>ZIS-</strong> (gruppo di amici) e <strong>BNB-</strong> (soggiorno preparato da una struttura).</p>
+          <JoinForm disabled={busy} onJoin={async (code) => {
+            const c = code.toUpperCase().trim();
+            // 🏡 Codice B&B: apre direttamente la schermata di benvenuto (non serve il nome)
+            if (c.startsWith('BNB')) { nav('/benvenuto/' + c.replace(/^BNB-?/, 'BNB-')); return; }
+            if (!name.trim()) { setErr('⬆️ Scrivi prima il TUO NOME nel campo in alto, poi premi Entra.'); return; }
             setBusy(true); setErr(null);
-            try { setDisplayName(name); const g = await joinGroup(code); setGroupId(g.id); }
+            try { setDisplayName(name); const g = await joinGroup(c); setGroupId(g.id); }
             catch (e) { setErr(String((e as Error).message || e)); }
             setBusy(false);
           }} />
@@ -439,7 +444,7 @@ function JoinForm({ onJoin, disabled }: { onJoin: (code: string) => void; disabl
   const [code, setCode] = useState('');
   return (
     <div className="flex gap-2">
-      <input className="input flex-1 font-mono uppercase" placeholder="ZIS-XXXXX" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} />
+      <input className="input flex-1 font-mono uppercase" placeholder="ZIS-XXXXX o BNB-XXXXX" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} />
       <button className="btn-secondary shrink-0" disabled={disabled || code.trim().length < 6} onClick={() => onJoin(code)}>Entra</button>
     </div>
   );
