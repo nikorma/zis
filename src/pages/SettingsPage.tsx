@@ -72,6 +72,10 @@ export default function SettingsPage() {
           </select>
         </label>
         <p className="text-xs opacity-60">{t('langNote', s.lang)}</p>
+        <button className="btn-ghost w-full !min-h-[38px] !py-1 text-sm" onClick={() => {
+          try { localStorage.removeItem('zaino-onboarding-v1'); } catch { /* ok */ }
+          alert('La presentazione iniziale verrà mostrata alla prossima apertura dell\u2019app.');
+        }}>🎬 Rivedi la presentazione iniziale</button>
       </section>
 
       <section className="card space-y-3">

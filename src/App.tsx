@@ -2,6 +2,7 @@ import { NavLink, Route, Routes } from 'react-router-dom';
 import { useApp } from './state/AppStore';
 import { firebaseReady, subscribeGroup, stopsToDays, getCurrentUid, type GroupStop, type Expense } from './services/group';
 import { t } from './lib/i18n';
+import Onboarding, { onboardingNeeded } from './components/Onboarding';
 import { useEffect, useRef, useState } from 'react';
 import HomePage from './pages/HomePage';
 import ItineraryPage from './pages/ItineraryPage';
@@ -116,6 +117,7 @@ function Splash() {
 export default function App() {
   const { data: appData } = useApp();
   const lang = appData.settings.lang;
+  const [intro, setIntro] = useState(() => onboardingNeeded());
   const { data } = useApp();
   const s = data.settings;
 
@@ -131,6 +133,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen pb-20">
+      {intro && <Onboarding onDone={() => setIntro(false)} />}
       <Splash />
       <GroupTripSync />
       <Routes>
