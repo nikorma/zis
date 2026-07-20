@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../state/AppStore';
 import { firebaseReady, fetchStayByCode, type Stay } from '../services/group';
+import { t, LANG_NAMES, LANG_LOCALE } from '../lib/i18n';
+import type { Lang } from '../types';
 
 const REST_LS = 'zaino-stay-rest-';
 
@@ -11,6 +13,8 @@ export default function WelcomePage() {
   const nav = useNavigate();
   const [stay, setStay] = useState<Stay | null>(null);
   const [state, setState] = useState<'loading' | 'ok' | 'notfound' | 'noconfig'>('loading');
+  const lang = data.settings.lang;
+  const loc = LANG_LOCALE[lang];
 
   useEffect(() => {
     if (!firebaseReady()) { setState('noconfig'); return; }
@@ -45,40 +49,48 @@ export default function WelcomePage() {
       style={{ background: 'linear-gradient(150deg, #1E2A4A 0%, #2A3A63 55%, #4A3560 100%)' }}>
       <img src="./icons/icon-192.png" alt="" className="w-24 h-24 rounded-3xl shadow-2xl" style={{ animation: 'logoPop 0.7s ease-out both' }} />
       <h1 className="font-display font-black text-3xl anim-rise">Zaino <span className="text-oro">in Spalla</span></h1>
+      <div className="flex gap-1.5 anim-rise" role="group" aria-label="Lingua">
+        {(Object.keys(LANG_NAMES) as Lang[]).map((l) => (
+          <button key={l} className={`px-2 py-1 rounded-lg text-lg ${lang === l ? 'bg-white/25' : 'opacity-60'}`}
+            onClick={() => update({ settings: { ...data.settings, lang: l } })}>
+            {LANG_NAMES[l].split(' ')[0]}
+          </button>
+        ))}
+      </div>
 
-      {state === 'loading' && <p className="opacity-80 animate-pulse">Apro il tuo soggiorno…</p>}
+      {state === 'loading' && <p className="opacity-80 animate-pulse">{t('wLoading', lang)}</p>}
 
       {state === 'ok' && stay && (
         <>
           <div className="hero-panel anim-rise-1 max-w-sm">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-oro font-bold">Un benvenuto da</p>
+            <p className="text-[10px] uppercase tracking-[0.18em] text-oro font-bold">{t('welcomeBy', lang)}</p>
             <p className="font-display font-bold text-2xl">🏡 {stay.structure}</p>
             <p className="text-sm opacity-90 mt-1">
-              {stay.guestName ? `Ciao ${stay.guestName}! ` : ''}Ti abbiamo preparato l'itinerario per il tuo soggiorno
-              {stay.checkin && <> dal <strong>{new Date(stay.checkin + 'T12:00').toLocaleDateString('it-IT', { day: 'numeric', month: 'long' })}</strong></>}
-              {stay.checkout && <> al <strong>{new Date(stay.checkout + 'T12:00').toLocaleDateString('it-IT', { day: 'numeric', month: 'long' })}</strong></>}
-              : {stay.days.length} giornate{stay.restaurants.length > 0 ? ` e ${stay.restaurants.length} ristoranti consigliati` : ''}. 🎒
+              {stay.guestName ? `${t('wHello', lang)} ${stay.guestName}! ` : ''}{t('wPrepared', lang)}
+              {stay.checkin && <> {t('wFrom', lang)} <strong>{new Date(stay.checkin + 'T12:00').toLocaleDateString(loc, { day: 'numeric', month: 'long' })}</strong></>}
+              {stay.checkout && <> {t('wTo', lang)} <strong>{new Date(stay.checkout + 'T12:00').toLocaleDateString(loc, { day: 'numeric', month: 'long' })}</strong></>}
+              : {stay.days.length} {t('daysW', lang)}{stay.restaurants.length > 0 ? ` · ${stay.restaurants.length} ${t('wRests', lang)}` : ''}. 🎒
             </p>
           </div>
           <button className="btn-gold text-base !min-h-[52px] px-6 anim-rise-2" onClick={accept}>
-            ✨ Apri il mio itinerario
+            ✨ {t('wOpen', lang)}
           </button>
-          <p className="text-xs opacity-60 anim-rise-3">Consiglio: dal menu del browser scegli "Aggiungi a schermata Home" per installare l'app.</p>
+          <p className="text-xs opacity-60 anim-rise-3">{t('wInstall', lang)}</p>
         </>
       )}
 
       {state === 'notfound' && (
         <div className="hero-panel max-w-sm">
-          <p className="font-semibold">😕 Soggiorno non trovato</p>
-          <p className="text-sm opacity-90 mt-1">Il link potrebbe essere scaduto o incompleto: chiedi alla struttura di rimandartelo.</p>
-          <button className="btn-gold w-full mt-3 !min-h-[44px]" onClick={() => nav('/')}>Vai all'app</button>
+          <p className="font-semibold">😕 {t('wNotFound', lang)}</p>
+          <p className="text-sm opacity-90 mt-1">{t('wNotFoundText', lang)}</p>
+          <button className="btn-gold w-full mt-3 !min-h-[44px]" onClick={() => nav('/')}>{t('wGoApp', lang)}</button>
         </div>
       )}
 
       {state === 'noconfig' && (
         <div className="hero-panel max-w-sm">
           <p className="text-sm">Questa installazione non ha il backend configurato.</p>
-          <button className="btn-gold w-full mt-3 !min-h-[44px]" onClick={() => nav('/')}>Vai all'app</button>
+          <button className="btn-gold w-full mt-3 !min-h-[44px]" onClick={() => nav('/')}>{t('wGoApp', lang)}</button>
         </div>
       )}
     </div>

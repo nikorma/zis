@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../state/AppStore';
 import { appConfirm } from '../lib/dialog';
+import { t as tr, LANG_LOCALE } from '../lib/i18n';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { dayForDate, nextStop } from '../lib/itinerary';
 import { distanceMeters, formatDistance, nearestTarget, googleMapsDirectionsUrl, clampRadius } from '../lib/geo';
@@ -10,7 +11,10 @@ import type { Stop } from '../types';
 import MapView from '../components/MapView';
 
 export default function HomePage() {
+  // lingua interfaccia
   const { data, update } = useApp();
+  const lang = data.settings.lang;
+  const loc = LANG_LOCALE[lang];
   const nav = useNavigate();
   const geo = useGeolocation();
   const [targetStopId, setTargetStopId] = useState<string | null>(null);
@@ -67,8 +71,8 @@ export default function HomePage() {
         <h1 className="font-display font-black text-3xl leading-none">Zaino <span className="text-oro">in Spalla</span></h1>
         <p className="opacity-75 text-sm mt-1">
           {day
-            ? new Date(day.date + 'T12:00').toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })
-            : 'Il tuo compagno di viaggio'}
+            ? new Date(day.date + 'T12:00').toLocaleDateString(loc, { weekday: 'long', day: 'numeric', month: 'long' })
+            : tr('tagline', lang)}
         </p>
         {next && (
           <div className="hero-panel max-w-[85%]">
@@ -90,21 +94,21 @@ export default function HomePage() {
 
       {data.trips.length > 0 && (
         <section className="card space-y-2 anim-rise-1">
-          <h2 className="font-display text-lg">🗺️ I miei viaggi</h2>
+          <h2 className="font-display text-lg">🗺️ {tr('myTrips', lang)}</h2>
           {data.trips.map((t) => {
             const active = t.id === data.activeTripId;
             const dates = t.days.length
-              ? `${new Date(t.days[0].date + 'T12:00').toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })} → ${new Date(t.days[t.days.length - 1].date + 'T12:00').toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}`
+              ? `${new Date(t.days[0].date + 'T12:00').toLocaleDateString(loc, { day: 'numeric', month: 'short' })} → ${new Date(t.days[t.days.length - 1].date + 'T12:00').toLocaleDateString(loc, { day: 'numeric', month: 'short' })}`
               : 'vuoto';
             return (
               <div key={t.id} className={`flex items-center gap-2 rounded-xl p-2 ${active ? 'bg-crema dark:bg-[#141C33]' : ''}`}>
                 <button className="flex-1 text-left" onClick={() => update({ days: t.days, activeTripId: t.id })}>
                   <span className="font-semibold text-sm">{t.groupId ? '👥' : '🧭'} {t.name}</span>
-                  <span className="block text-xs opacity-60">{t.days.length} giornate · {dates}{t.groupId ? ' · 🔗 sincronizzato col gruppo' : ''}</span>
+                  <span className="block text-xs opacity-60">{t.days.length} {tr('daysW', lang)} · {dates}{t.groupId ? ' · 🔗 sincronizzato col gruppo' : ''}</span>
                 </button>
                 {active
-                  ? <span className="badge-ok shrink-0">Aperto</span>
-                  : <button className="btn-secondary !min-h-[36px] !py-1 text-sm shrink-0" onClick={() => update({ days: t.days, activeTripId: t.id })}>Apri</button>}
+                  ? <span className="badge-ok shrink-0">{tr('opened', lang)}</span>
+                  : <button className="btn-secondary !min-h-[36px] !py-1 text-sm shrink-0" onClick={() => update({ days: t.days, activeTripId: t.id })}>{tr('open', lang)}</button>}
                 <button className="btn-ghost !min-h-[36px] !py-1 !px-2 shrink-0" aria-label="Elimina viaggio" onClick={async () => {
                   if (await appConfirm(`Eliminare il viaggio "${t.name}"?\nLe sue giornate e tappe andranno perse.`, 'Elimina', true)) {
                     const trips = data.trips.filter((x) => x.id !== t.id);
@@ -120,10 +124,10 @@ export default function HomePage() {
       {data.days.length === 0 ? (
         <section className="card space-y-3 text-center anim-rise-2">
           <p className="text-5xl floaty" aria-hidden>🎒</p>
-          <h2 className="font-display font-black text-xl">Il tuo prossimo viaggio parte da qui</h2>
-          <p className="text-sm opacity-70">Crea l’itinerario in un minuto con il planner: verrà salvato qui automaticamente.</p>
+          <h2 className="font-display font-black text-xl">{tr('emptyTitle', lang)}</h2>
+          <p className="text-sm opacity-70">{tr('emptyText', lang)}</p>
           <div className="grid grid-cols-2 gap-2 pt-2 text-left stagger-lr">
-            <Link to="/pianifica" className="btn-primary col-span-2 text-base justify-center">🌍 Pianifica un viaggio</Link>
+            <Link to="/pianifica" className="btn-primary col-span-2 text-base justify-center">🌍 {tr('planTrip', lang)}</Link>
             <Link to="/itinerario" className="btn-secondary justify-center">✏️ Crea a mano</Link>
             <Link to="/gruppo" className="btn-secondary justify-center">👥 Viaggio di gruppo</Link>
             <Link to="/valigia" className="btn-secondary col-span-2 justify-center">🧳 Valigia intelligente</Link>
@@ -137,21 +141,21 @@ export default function HomePage() {
         <div className="grid grid-cols-2 gap-2 pt-2 stagger-lr">
           {data.days.length === 0 ? (
             <>
-              <Link to="/pianifica" className="btn-primary col-span-2 text-base">🌍 Pianifica un viaggio</Link>
+              <Link to="/pianifica" className="btn-primary col-span-2 text-base">🌍 {tr('planTrip', lang)}</Link>
               <Link to="/itinerario" className="btn-secondary">✏️ Crea a mano</Link>
               <Link to="/gruppo" className="btn-secondary">👥 Viaggio di gruppo</Link>
             </>
           ) : (
             <>
-              <button className="btn-primary col-span-2 text-base" onClick={() => nav('/itinerario')}>🥾 Zaino in spalla, si parte!</button>
-              <Link to="/gruppo" className="tile"><span className="ico">👥</span>Gruppo</Link>
-              <Link to="/occhio" className="tile"><span className="ico">📸</span>Occhio di viaggio</Link>
+              <button className="btn-primary col-span-2 text-base" onClick={() => nav('/itinerario')}>🥾 {tr('letsGo', lang)}</button>
+              <Link to="/gruppo" className="tile"><span className="ico">👥</span>{tr('group', lang)}</Link>
+              <Link to="/occhio" className="tile"><span className="ico">📸</span>{tr('lens', lang)}</Link>
               {geo.status === 'active' || geo.status === 'low-accuracy' || geo.status === 'stale' ? (
-                <button className="tile" onClick={geo.stop}><span className="ico">🛑</span>Disattiva GPS</button>
+                <button className="tile" onClick={geo.stop}><span className="ico">🛑</span>{tr('gpsOff', lang)}</button>
               ) : (
-                <button className="tile !border-oro" onClick={enableGps}><span className="ico">📡</span>Attiva GPS</button>
+                <button className="tile !border-oro" onClick={enableGps}><span className="ico">📡</span>{tr('gpsOn', lang)}</button>
               )}
-              <Link to="/valigia" className="tile"><span className="ico">🧳</span>Valigia</Link>
+              <Link to="/valigia" className="tile"><span className="ico">🧳</span>{tr('suitcase', lang)}</Link>
             </>
           )}
         </div>

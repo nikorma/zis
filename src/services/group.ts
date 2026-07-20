@@ -192,13 +192,11 @@ export function subscribeGroup(
  * Prova /api/ai; se non disponibile usa un testo-modello dignitoso
  * (sempre modificabile a mano dal proprietario).
  */
-export async function generatePresentation(title: string, notes?: string): Promise<string> {
+export async function generatePresentation(title: string, notes?: string, lang: string = 'it'): Promise<string> {
   const fallback =
-    `${title}. Questa tappa è stata aggiunta all'itinerario di gruppo` +
-    `${notes ? ` con questa nota: ${notes}.` : '.'} ` +
-    'Quando arrivate, prendetevi un momento per guardarvi intorno: in viaggio anche gli angoli fuori programma ' +
-    'hanno sempre qualcosa da raccontare — un dettaglio su una porta, un cortile, un profumo nuovo. ' +
-    'Il proprietario della tappa può sostituire questo testo con una presentazione personalizzata.';
+    `${title}.` +
+    `${notes ? ` ${notes}` : ''} ` +
+    '(Presentazione automatica non disponibile in questo momento: tocca 🔄 Rigenera quando sei online per il testo completo da guida.)';
   try {
     const res = await fetch('/api/ai', {
       method: 'POST',

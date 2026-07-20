@@ -87,6 +87,7 @@ export default function PlannerPage() {
             tripStart: start, tripEnd: end,
             partIndex: i + 1, partTotal: parts.length,
             usedPlaces: usedPlaces.slice(-60),
+            lang: data.settings.lang,
           }),
         });
         const json = await res.json();

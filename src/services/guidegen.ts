@@ -193,12 +193,12 @@ out center 40;`;
 export interface GuidePoint { name: string; text: string }
 
 /** Genera la guida interna punto-per-punto via /api/guide (richiede backend AI). */
-export async function generateInteriorGuide(title: string, address?: string): Promise<{ ok: true; points: GuidePoint[] } | { ok: false; error: string }> {
+export async function generateInteriorGuide(title: string, address?: string, lang: string = 'it'): Promise<{ ok: true; points: GuidePoint[] } | { ok: false; error: string }> {
   try {
     const res = await fetch('/api/guide', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, address }),
+      body: JSON.stringify({ title, address, lang }),
     });
     const json = await res.json().catch(() => ({}));
     if (!res.ok) {

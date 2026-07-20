@@ -4,7 +4,7 @@
 
 export type LatLng = { lat: number; lng: number };
 
-export type Lang = 'it' | 'es' | 'en' | 'el';
+export type Lang = 'it' | 'en' | 'fr' | 'es' | 'el';
 
 /** Informazione variabile con tracciabilità della fonte (mai inventata). */
 export interface VerifiableInfo {

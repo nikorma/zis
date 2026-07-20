@@ -25,14 +25,16 @@ export default async function handler(req, res) {
   else if (slot.count >= MAX_PER_HOUR) return res.status(429).json({ error: 'Troppe guide generate in quest’ora: riprova più tardi.' });
   else slot.count += 1;
 
-  const { title, address } = req.body || {};
+  const { title, address, lang } = req.body || {};
+  const LANG_NAMES = { it: 'italiano', en: 'inglese (English)', fr: 'francese (français)', es: 'spagnolo (español)', el: 'greco (ελληνικά)' };
+  const langName = LANG_NAMES[lang] || 'italiano';
   if (!title) return res.status(400).json({ error: 'Serve il nome dell’attrazione.' });
 
   const system = `Sei un'audioguida museale esperta. Rispondi ESCLUSIVAMENTE con JSON valido, senza testo attorno.
 Schema: {"points":[{"name":"nome del punto/sala","text":"testo dell'audioguida"}]}
 Regole:
 - Da 6 a 10 punti che seguono il percorso di visita REALE del luogo (ingresso → sale principali → uscita).
-- Ogni "text": 120-170 parole, in italiano, tono caldo, scritto per l'ASCOLTO: indica dove guardare ("alza lo sguardo...", "alla tua destra...").
+- Ogni "text": 120-170 parole, in ${langName}, tono caldo, scritto per l'ASCOLTO: indica dove guardare ("alza lo sguardo...", "alla tua destra...").
 - Racconta storia, aneddoti e dettagli da osservare. NON inventare prezzi, orari o regole: se servono, di' di verificare sul posto.
 - Se il luogo non si visita all'interno (piazza, ponte, quartiere), fai i punti del percorso esterno.
 - Usa FATTI SPECIFICI e VERI del luogo (date, artisti, eventi storici) quando li conosci con certezza.

@@ -24,15 +24,17 @@ export default async function handler(req, res) {
   else if (slot.count >= MAX_PER_HOUR) return res.status(429).json({ error: 'Troppe foto in quest\u2019ora: riprova più tardi.' });
   else slot.count += 1;
 
-  const { image, task } = req.body || {};
+  const { image, task, lang } = req.body || {};
+  const LANG_NAMES = { it: 'italiano', en: 'inglese (English)', fr: 'francese (français)', es: 'spagnolo (español)', el: 'greco (ελληνικά)' };
+  const langName = LANG_NAMES[lang] || 'italiano';
   if (!image || !String(image).startsWith('data:image/')) return res.status(400).json({ error: 'Serve una foto.' });
   if (String(image).length > 1_800_000) return res.status(400).json({ error: 'Foto troppo grande: riprova (l\u2019app dovrebbe ridurla da sola).' });
 
   const prompt = task === 'translate'
-    ? `Leggi TUTTO il testo presente nella foto (insegna, menù, cartello, etichetta, pagina…) e traducilo in ITALIANO. Il testo può essere in QUALSIASI lingua e alfabeto (greco, cirillico, arabo, cinese…): leggilo con attenzione anche se la foto è inclinata o parziale.
+    ? `Leggi TUTTO il testo presente nella foto (insegna, menù, cartello, etichetta, pagina…) e traducilo in ${langName.toUpperCase()}. Il testo può essere in QUALSIASI lingua e alfabeto (greco, cirillico, arabo, cinese…): leggilo con attenzione anche se la foto è inclinata o parziale.
 Formato: prima la traduzione chiara e ordinata; poi una riga "Testo originale (lingua):" con il testo letto.
 Se il testo è un menù, mantieni la struttura a voci. Se non c'è testo leggibile, dillo con gentilezza.`
-    : `Sei ZainoInSpalla, guida di viaggio. Guarda la foto e spiega in ITALIANO cosa si vede (monumento, statua, piatto, oggetto, panorama…).
+    : `Sei ZainoInSpalla, guida di viaggio. Guarda la foto e spiega in ${langName.toUpperCase()} cosa si vede (monumento, statua, piatto, oggetto, panorama…).
 Dai 2-3 curiosità interessanti da guida. Se non riconosci il soggetto con certezza, dillo onestamente e proponi l'ipotesi più probabile motivandola. Massimo 180 parole. Non inventare nomi, date o prezzi.`;
 
   try {

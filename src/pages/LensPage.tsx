@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import AudioControls from '../components/AudioControls';
+import { useApp } from '../state/AppStore';
 import WorkingScreen from '../components/WorkingScreen';
 
 type Task = 'translate' | 'identify';
@@ -25,6 +26,7 @@ async function shrink(file: File): Promise<string> {
 }
 
 export default function LensPage() {
+  const { data } = useApp();
   const fileRef = useRef<HTMLInputElement>(null);
   const [photo, setPhoto] = useState<string | null>(null);
   const [busy, setBusy] = useState<Task | null>(null);
@@ -45,7 +47,7 @@ export default function LensPage() {
       const r = await fetch('/api/vision', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: photo, task }),
+        body: JSON.stringify({ image: photo, task, lang: data.settings.lang }),
       });
       const j = await r.json().catch(() => ({}));
       if (r.status === 404) {

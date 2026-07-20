@@ -23,6 +23,8 @@
 const hourlyByIp = new Map(); // ip -> { count, resetTs } — sostituire con KV in produzione
 let dailyTokens = { day: '', used: 0 };
 
+const LANG_NAMES = { it: 'italiano', en: 'inglese (English)', fr: 'francese (français)', es: 'spagnolo (español)', el: 'greco (ελληνικά)' };
+
 const SYSTEM_PROMPT = `Sei "ZainoInSpalla", una guida di viaggio personale esperta di tutto il mondo.
 Rispondi a domande su viaggi: storia, arte, monumenti, cultura, gastronomia, consigli pratici, frasi utili nelle lingue locali.
 Rispondi in italiano, tono caldo da guida esperta, massimo 250 parole.
@@ -63,6 +65,7 @@ export default async function handler(req, res) {
   }
 
   const question = (req.body?.question || '').toString().slice(0, 500);
+  const langName = LANG_NAMES[req.body?.lang] || 'italiano';
   if (!question.trim()) return res.status(400).json({ error: 'Domanda mancante' });
 
   try {
@@ -74,7 +77,7 @@ export default async function handler(req, res) {
         max_tokens: 500,
         temperature: 0.7,
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: SYSTEM_PROMPT + `\nIMPORTANTE: rispondi SEMPRE in ${langName}.` },
           { role: 'user', content: question },
         ],
       }),

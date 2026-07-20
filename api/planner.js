@@ -30,8 +30,10 @@ export default async function handler(req, res) {
   const {
     destination, startDate, endDate, checkinTime, checkoutTime,
     afternoonBreak, lunchOut, dinnerOut, notes, mealTimes, mode, wishlist, timeMode,
-    tripStart, tripEnd, partIndex, partTotal, usedPlaces,
+    tripStart, tripEnd, partIndex, partTotal, usedPlaces, lang,
   } = req.body || {};
+  const LANG_NAMES = { it: 'italiano', en: 'inglese (English)', fr: 'francese (français)', es: 'spagnolo (español)', el: 'greco (ελληνικά)' };
+  const langName = LANG_NAMES[lang] || 'italiano';
   const multiPart = partTotal && partTotal > 1;
   const mt = { wake: '07:30', breakfast: '08:00', lunch: '13:00', dinner: '20:30', ...(mealTimes || {}) };
   if (!destination || !startDate || !endDate) {
@@ -58,7 +60,7 @@ ${wishlist}
 - "warnings" è un array di stringhe brevi in italiano; se non ce ne sono, metti [].
 - NON RIPETERE MAI la stessa attrazione o lo stesso luogo in giorni diversi dell'itinerario.
 - Meglio una descrizione breve e CERTA che una lunga e inventata: se di un luogo sai poco, di' solo ciò di cui sei sicuro.
-- Lingua: italiano. Se citi l'app, chiamala \"ZainoInSpalla\".`;
+- Lingua di TUTTI i testi (title, description, warnings): ${langName}. Se citi l'app, chiamala \"ZainoInSpalla\".`;
 
   const user = `Destinazione: ${destination}
 ${multiPart

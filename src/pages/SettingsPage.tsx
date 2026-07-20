@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { useApp } from '../state/AppStore';
 import { exportJson, importJson, clearAllData, resolveConflict } from '../lib/storage';
 import { clampRadius } from '../lib/geo';
-import { LANG_NAMES } from '../lib/i18n';
+import { t, LANG_NAMES } from '../lib/i18n';
 import type { Lang, Settings } from '../types';
 
 export default function SettingsPage() {
@@ -66,7 +66,12 @@ export default function SettingsPage() {
             <option value="auto">Automatico (sistema)</option>
           </select>
         </label>
-        <p className="text-sm">🌐 Lingua: <strong>Italiano</strong> <span className="text-xs opacity-60">(altre lingue in arrivo: il selettore tornerà quando le traduzioni saranno complete)</span></p>
+        <label className="label">🌐 {t('language', s.lang)}
+          <select className="input" value={s.lang} onChange={(e) => setS({ lang: e.target.value as Lang })}>
+            {(Object.keys(LANG_NAMES) as Lang[]).map((l) => <option key={l} value={l}>{LANG_NAMES[l]}</option>)}
+          </select>
+        </label>
+        <p className="text-xs opacity-60">{t('langNote', s.lang)}</p>
       </section>
 
       <section className="card space-y-3">

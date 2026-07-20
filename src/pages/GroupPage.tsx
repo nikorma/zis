@@ -286,7 +286,7 @@ export default function GroupPage() {
         <button className="btn-primary w-full" disabled={busy || !nt.title.trim()} onClick={async () => {
           setBusy(true); setErr(null);
           try {
-            const pres = await generatePresentation(nt.title, nt.notes);
+            const pres = await generatePresentation(nt.title, nt.notes, data.settings.lang);
             await addGroupStop(groupId, { title: nt.title.trim(), date: nt.date || group?.startDate || new Date().toISOString().slice(0, 10), time: nt.time || undefined, address: nt.address || undefined, coords: ntCoords ?? undefined, notes: nt.notes || undefined }, pres);
             setNt({ title: '', date: nt.date, time: '', address: '', notes: '' });
             setNtCoords(null);

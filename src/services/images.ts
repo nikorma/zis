@@ -59,11 +59,27 @@ export async function searchCommonsImage(subject: string): Promise<CommonsImage 
     if (!res.ok) return null;
     const json = await res.json();
     const pages = json?.query?.pages ? (Object.values(json.query.pages) as any[]) : [];
-    // Preferisci jpeg/png orizzontali, scarta svg/pdf/mappe
+
+    // 🎯 Pertinenza: il file deve contenere almeno una parola significativa del soggetto
+    // (es. "nettuno" o "bologna"): meglio NESSUNA foto che la foto sbagliata.
+    const STOPWORDS = new Set(['della', 'delle', 'dello', 'degli', 'museo', 'chiesa', 'piazza', 'palazzo', 'ponte', 'torre', 'porta', 'parco', 'giardino', 'centro', 'storico', 'santa', 'santo', 'basilica', 'cattedrale', 'fontana', 'mercato', 'teatro', 'castello', 'pranzo', 'cena', 'colazione', 'ristorante', 'italia', 'italy']);
+    const norm = (t: string) => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const tokens = norm(subject).split(/[^a-z0-9]+/).filter((t) => t.length >= 4 && !STOPWORDS.has(t));
+    const relevant = (title: string) => {
+      if (tokens.length === 0) return true;
+      const t = norm(title);
+      return tokens.some((tok) => t.includes(tok));
+    };
+
+    // Preferisci jpeg/png, scarta svg/pdf/mappe e file NON pertinenti
     const candidates = pages
       .map((p) => ({ p, info: p.imageinfo?.[0] }))
-      .filter(({ p, info }) => info?.thumburl && !/\.(svg|pdf|tif)/i.test(p.title || ''))
-      .sort((a, b) => (b.info.thumbwidth ?? 0) - (a.info.thumbwidth ?? 0));
+      .filter(({ p, info }) => info?.thumburl && !/\.(svg|pdf|tif)/i.test(p.title || '') && relevant(p.title || ''))
+      .sort((a, b) => {
+        // più parole del soggetto nel nome del file = più in alto
+        const score = (x: { p: any }) => tokens.filter((tok) => norm(x.p.title || '').includes(tok)).length;
+        return score(b) - score(a) || (b.info.thumbwidth ?? 0) - (a.info.thumbwidth ?? 0);
+      });
 
     const best = candidates[0];
     let result: CommonsImage | null = null;

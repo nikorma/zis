@@ -1,6 +1,7 @@
 import { NavLink, Route, Routes } from 'react-router-dom';
 import { useApp } from './state/AppStore';
 import { firebaseReady, subscribeGroup, stopsToDays, getCurrentUid, type GroupStop, type Expense } from './services/group';
+import { t } from './lib/i18n';
 import { useEffect, useRef, useState } from 'react';
 import HomePage from './pages/HomePage';
 import ItineraryPage from './pages/ItineraryPage';
@@ -17,27 +18,29 @@ import WelcomePage from './pages/WelcomePage';
 import PackingPage from './pages/PackingPage';
 
 const NAV = [
-  { to: '/', label: 'Home', icon: '🏠' },
+  { to: '/', tkey: 'home', icon: '🏠' },
   { to: '/itinerario', label: 'Itinerario', icon: '🗓️' },
-  { to: '/mappa', label: 'Mappa', icon: '🗺️' },
-  { to: '/pianifica', label: 'Pianifica', icon: '🌍' },
-  { to: '/altro', label: 'Altro', icon: '🎒' },
+  { to: '/mappa', tkey: 'map', icon: '🗺️' },
+  { to: '/pianifica', tkey: 'plan', icon: '🌍' },
+  { to: '/altro', tkey: 'more', icon: '🎒' },
 ];
 
 function MorePage() {
+  const { data } = useApp();
+  const lang = data.settings.lang;
   const main = [
-    { to: '/occhio', label: '📸 Occhio di viaggio (traduci e riconosci)' },
-    { to: '/struttura', label: '🏡 Modalità struttura (B&B e host)' },
-    { to: '/valigia', label: '🧳 Valigia intelligente' },
-    { to: '/gruppo', label: '👥 Gruppo di viaggio (itinerario condiviso)' },
-    { to: '/assistente', label: '💬 Chiedi alla guida' },
-    { to: '/impostazioni', label: '⚙️ Impostazioni' },
-    { to: '/admin', label: '🔐 Pannello amministrativo' },
-    { to: '/privacy', label: '🛡️ Privacy e dati' },
+    { to: '/occhio', label: t('mLens', lang) },
+    { to: '/struttura', label: t('mHost', lang) },
+    { to: '/valigia', label: t('mSuitcase', lang) },
+    { to: '/gruppo', label: t('mGroup', lang) },
+    { to: '/assistente', label: t('mAssistant', lang) },
+    { to: '/impostazioni', label: t('mSettings', lang) },
+    { to: '/admin', label: t('mAdmin', lang) },
+    { to: '/privacy', label: t('mPrivacy', lang) },
   ];
   return (
     <div className="p-4 space-y-3 max-w-xl mx-auto">
-      <h1 className="page-title">Altro</h1>
+      <h1 className="page-title">{t('more', lang)}</h1>
       <div className="azulejo-band" aria-hidden />
       {main.map((l) => (
         <NavLink key={l.to} to={l.to} className="card block text-lg hover:border-terra">
@@ -111,6 +114,8 @@ function Splash() {
 }
 
 export default function App() {
+  const { data: appData } = useApp();
+  const lang = appData.settings.lang;
   const { data } = useApp();
   const s = data.settings;
 
@@ -163,7 +168,7 @@ export default function App() {
               }
             >
               <span aria-hidden className="text-xl leading-none">{n.icon}</span>
-              {n.label}
+              {t(n.tkey as string, lang)}
             </NavLink>
           ))}
         </div>

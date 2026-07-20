@@ -61,7 +61,7 @@ const MODES: { v: TravelMode; label: string }[] = [
 
 const FOOD_RE = /ristorant|trattor|pizzer|oster|taverna|pranz|cena|colazion|brunch|aperitiv|mangiare|tapas|bistro|sushi|kebab|street ?food|gelater|panin|bar\b/i;
 
-function StopDetails({ stop, date, dayCoords, onSave }: { stop: Stop; date: string; dayCoords?: { lat: number; lng: number }; onSave: (patch: Partial<Stop>) => void }) {
+function StopDetails({ stop, date, dayCoords, city, lang, onSave }: { stop: Stop; date: string; dayCoords?: { lat: number; lng: number }; city?: string; lang?: string; onSave: (patch: Partial<Stop>) => void }) {
   const isFood = FOOD_RE.test(stop.title) || FOOD_RE.test(stop.description ?? '');
   const [mode, setMode] = useState<TravelMode>('walking');
   const [gen, setGen] = useState(false);
@@ -131,14 +131,14 @@ function StopDetails({ stop, date, dayCoords, onSave }: { stop: Stop; date: stri
 
   const makePresentation = async () => {
     setGen(true);
-    const text = await generatePresentation(stop.title, stop.notes || stop.description);
+    const text = await generatePresentation(stop.title, stop.notes || stop.description, lang);
     onSave({ presentation: text });
     setGen(false);
   };
 
   const makeGuide = async () => {
     setGenGuide(true); setGuideErr(null);
-    const res = await generateInteriorGuide(stop.title, stop.address);
+    const res = await generateInteriorGuide(stop.title, stop.address, lang);
     setGenGuide(false);
     if (res.ok) { onSave({ interiorGuide: res.points }); setPt(0); }
     else setGuideErr(res.error);
@@ -163,7 +163,7 @@ function StopDetails({ stop, date, dayCoords, onSave }: { stop: Stop; date: stri
           ]}
         />
       )}
-      <GuideImage subject={`${stop.title}${stop.address ? ' ' + stop.address : ''}`} alt={stop.title} />
+      <GuideImage subject={`${stop.title} ${city ?? ''}`.trim()} alt={stop.title} />
       {wx && (
         <p className="text-sm font-semibold">
           {wx.emoji} Previsto {wx.temp}°C {stop.time ? `alle ${stop.time}` : 'a mezzogiorno'}
@@ -306,7 +306,7 @@ function StopDetails({ stop, date, dayCoords, onSave }: { stop: Stop; date: stri
             <button className="btn-ghost !min-h-[32px] !py-0.5 !px-2 text-xs" disabled={genGuide} onClick={makeGuide}>{genGuide ? '⏳' : '🔄'}</button>
           </div>
           <p className="font-semibold">{cur.name}</p>
-          <GuideImage subject={`${stop.title} ${cur.name}`} alt={cur.name} />
+          <GuideImage subject={`${stop.title} ${cur.name} ${city ?? ''}`.trim()} alt={cur.name} />
           <p className="text-sm leading-relaxed whitespace-pre-wrap">{cur.text}</p>
           <AudioControls
             text={cur.text}
@@ -523,7 +523,7 @@ export default function ItineraryPage() {
                   </div>
                   {editing === s.id && <div className="mt-2"><StopEditor day={day} stop={s} onClose={() => setEditing(null)} /></div>}
                   {openStop === s.id && (
-                    <StopDetails stop={s} date={day.date} dayCoords={day.stops.find((x) => x.coords)?.coords} onSave={(patch) => setDays(it.updateStop(data.days, day.id, s.id, patch))} />
+                    <StopDetails stop={s} date={day.date} lang={data.settings.lang} city={(data.trips.find((t) => t.id === data.activeTripId)?.destination ?? '').split(',')[0].split('(')[0].trim()} dayCoords={day.stops.find((x) => x.coords)?.coords} onSave={(patch) => setDays(it.updateStop(data.days, day.id, s.id, patch))} />
                   )}
                 </li>
               );
