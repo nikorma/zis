@@ -4,7 +4,7 @@ import AudioControls from '../components/AudioControls';
 import GuideImage from '../components/GuideImage';
 import { googleMapsDirectionsUrl, type TravelMode } from '../lib/geo';
 import { generatePresentation } from '../services/group';
-import { geocodeOne, generateInteriorGuide, findRestaurants, type FoodPlace } from '../services/guidegen';
+import { geocodeOne, generateInteriorGuide, findRestaurants, foodDebug, type FoodPlace } from '../services/guidegen';
 import { hourForecast, forecastAvailable, type HourForecast } from '../services/forecast';
 import { appConfirm } from '../lib/dialog';
 import MapView from '../components/MapView';
@@ -203,7 +203,7 @@ function StopDetails({ stop, date, dayCoords, onSave }: { stop: Stop; date: stri
           {finderWhere === 'tappa' && <p className="text-[11px] opacity-60 -mt-1">💡 Per cercare vicino a te, consenti la posizione al browser quando la chiede.</p>}
           {finder.length === 0 && (
             <div className="text-sm opacity-80 space-y-2">
-              <p>😕 Non ho trovato locali: {(!stop.coords && finderWhere === 'tappa') ? 'questa tappa non ha una posizione (aprila e lascia che la agganci, o consenti il GPS).' : 'zona senza locali mappati o servizio momentaneamente pieno.'}</p>
+              <p>😕 Non ho trovato locali: {(!stop.coords && finderWhere === 'tappa') ? 'questa tappa non ha una posizione (aprila e lascia che la agganci, o consenti il GPS).' : 'zona senza locali mappati o servizio momentaneamente pieno.'}{foodDebug && <span className="block text-[10px] opacity-50 mt-1">dettaglio: {foodDebug}</span>}</p>
               <div className="flex gap-2">
                 <button className="btn-secondary !min-h-[38px] !py-1 text-sm" onClick={() => setFinder('ask')}>🔄 Riprova</button>
                 <a className="btn-secondary !min-h-[38px] !py-1 text-sm" target="_blank" rel="noreferrer"
@@ -359,11 +359,37 @@ export default function ItineraryPage() {
 
   return (
     <div className="max-w-xl mx-auto p-4 space-y-4">
+      {(() => {
+        if (!data.activeTripId?.startsWith('stay-')) return null;
+        try {
+          const raw = localStorage.getItem('zaino-stay-rest-' + data.activeTripId);
+          if (!raw) return null;
+          const { structure, list } = JSON.parse(raw) as { structure: string; list: { name: string; address?: string; phone?: string; note?: string }[] };
+          if (!list?.length) return null;
+          return (
+            <section className="card border-2 border-oro/60 space-y-2">
+              <h2 className="font-display text-lg">🍽️ Consigliati da {structure}</h2>
+              {list.map((r, i) => (
+                <div key={i} className="rounded-xl bg-crema dark:bg-[#141C33] p-2.5 text-sm">
+                  <p className="font-semibold">{r.name}{r.note ? <span className="font-normal opacity-80"> — «{r.note}»</span> : null}</p>
+                  <p className="text-xs opacity-70 flex flex-wrap gap-x-3">
+                    {r.address && <span>📍 {r.address}</span>}
+                    {r.phone && <a className="underline" href={`tel:${r.phone.replace(/\s/g, '')}`}>📞 {r.phone}</a>}
+                  </p>
+                </div>
+              ))}
+            </section>
+          );
+        } catch { return null; }
+      })()}
       <header className="flex items-center justify-between gap-2">
         <div>
           <h1 className="page-title">Itinerario</h1>
           {data.trips.find((t) => t.id === data.activeTripId)?.groupId && (
             <p className="text-xs badge-ok mt-1">👥 Viaggio di gruppo · 🔗 sincronizzato in tempo reale</p>
+          )}
+          {data.activeTripId?.startsWith('stay-') && (
+            <p className="text-xs badge-ok mt-1">🏡 Preparato dalla tua struttura</p>
           )}
         </div>
         <div className="flex gap-1.5">

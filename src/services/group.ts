@@ -390,3 +390,84 @@ export async function resolveRequest(
   }
   await setDoc(doc(d, 'groups', groupId, 'requests', req.id), { status: approve ? 'approvata' : 'rifiutata' }, { merge: true });
 }
+
+// ---------- 🏡 Modalità struttura (B&B): soggiorni preparati per gli ospiti ----------
+
+export interface StayRestaurant { name: string; address?: string; phone?: string; note?: string }
+
+export interface Stay {
+  id: string;
+  code: string;              // BNB-XXXXX
+  structure: string;         // nome della struttura
+  guestName: string;
+  checkin: string;           // YYYY-MM-DD
+  checkout: string;
+  days: PersonalDay[];
+  restaurants: StayRestaurant[];
+}
+
+function makeStayCode(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let c = '';
+  for (let i = 0; i < 5; i++) c += chars[Math.floor(Math.random() * chars.length)];
+  return `BNB-${c}`;
+}
+
+/** Sposta le date delle giornate in sequenza a partire dal check-in. */
+export function shiftDaysTo(days: PersonalDay[], checkin: string): PersonalDay[] {
+  const addIso = (iso: string, n: number) => {
+    const d = new Date(iso + 'T12:00'); d.setDate(d.getDate() + n);
+    return d.toISOString().slice(0, 10);
+  };
+  return days.map((d, i) => ({ ...d, date: addIso(checkin, i) }));
+}
+
+export async function createStay(
+  structure: string, guestName: string, checkin: string, checkout: string,
+  days: PersonalDay[], restaurants: StayRestaurant[]
+): Promise<Stay> {
+  const d = ensure();
+  const user = await ensureUser();
+  const code = makeStayCode();
+  const shifted = shiftDaysTo(days, checkin);
+  const ref = await addDoc(collection(d, 'stays'), {
+    code,
+    structure: structure.trim() || 'La tua struttura',
+    guestName: guestName.trim(),
+    checkin, checkout,
+    daysJson: JSON.stringify(shifted),
+    restaurantsJson: JSON.stringify(restaurants),
+    createdBy: user.uid,
+    createdAt: serverTimestamp(),
+  });
+  return { id: ref.id, code, structure, guestName, checkin, checkout, days: shifted, restaurants };
+}
+
+export async function fetchStayByCode(code: string): Promise<Stay | null> {
+  const d = ensure();
+  await ensureUser(); // accesso anonimo anche per l'ospite
+  const snap = await getDocs(query(collection(d, 'stays'), where('code', '==', code.toUpperCase().trim())));
+  if (snap.empty) return null;
+  const x = snap.docs[0];
+  const v = x.data() as Record<string, unknown>;
+  try {
+    return {
+      id: x.id,
+      code: String(v.code),
+      structure: String(v.structure ?? 'La struttura'),
+      guestName: String(v.guestName ?? ''),
+      checkin: String(v.checkin ?? ''),
+      checkout: String(v.checkout ?? ''),
+      days: JSON.parse(String(v.daysJson ?? '[]')) as PersonalDay[],
+      restaurants: JSON.parse(String(v.restaurantsJson ?? '[]')) as StayRestaurant[],
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function deleteStay(id: string): Promise<void> {
+  const d = ensure();
+  await ensureUser();
+  await deleteDoc(doc(d, 'stays', id));
+}

@@ -156,6 +156,17 @@ body {
   .btn:active { transform: scale(0.97); }
   .btn-primary, .btn-gold, .btn-secondary { transition: transform 0.12s ease, filter 0.12s ease, box-shadow 0.12s ease; }
   .btn-primary:hover, .btn-gold:hover { transform: translateY(-1px); }
+  .tile {
+    @apply flex flex-col items-center justify-center gap-1 rounded-2xl bg-white border-2 border-[#EAE0CB] py-3 px-2 font-semibold text-sm text-center;
+    min-height: 76px;
+    box-shadow: 0 3px 10px rgba(30, 42, 74, 0.06);
+    transition: transform 0.12s ease, border-color 0.12s ease;
+  }
+  .tile:active { transform: scale(0.96); }
+  .tile:hover { border-color: var(--terra); }
+  .dark .tile { @apply bg-[#202B49] border-[#33406B] text-[#EDE9E0]; }
+  .tile .ico { font-size: 1.6rem; line-height: 1; }
+
   @keyframes fromLeft { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
   @keyframes fromRight { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
   .stagger-lr > *:nth-child(odd) { animation: fromLeft 0.45s ease-out both; }

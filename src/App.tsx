@@ -12,6 +12,8 @@ import PrivacyPage from './pages/PrivacyPage';
 import GroupPage from './pages/GroupPage';
 import PlannerPage from './pages/PlannerPage';
 import LensPage from './pages/LensPage';
+import HostPage from './pages/HostPage';
+import WelcomePage from './pages/WelcomePage';
 import PackingPage from './pages/PackingPage';
 
 const NAV = [
@@ -25,6 +27,7 @@ const NAV = [
 function MorePage() {
   const main = [
     { to: '/occhio', label: '📸 Occhio di viaggio (traduci e riconosci)' },
+    { to: '/struttura', label: '🏡 Modalità struttura (B&B e host)' },
     { to: '/valigia', label: '🧳 Valigia intelligente' },
     { to: '/gruppo', label: '👥 Gruppo di viaggio (itinerario condiviso)' },
     { to: '/assistente', label: '💬 Chiedi alla guida' },
@@ -137,6 +140,8 @@ export default function App() {
         <Route path="/gruppo" element={<GroupPage />} />
         <Route path="/pianifica" element={<PlannerPage />} />
         <Route path="/occhio" element={<LensPage />} />
+        <Route path="/struttura" element={<HostPage />} />
+        <Route path="/benvenuto/:code" element={<WelcomePage />} />
         <Route path="/valigia" element={<PackingPage />} />
         <Route path="/altro" element={<MorePage />} />
       </Routes>

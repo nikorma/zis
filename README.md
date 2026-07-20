@@ -75,6 +75,11 @@ service cloud.firestore {
         allow update, delete: if request.auth != null && resource.data.payerId == request.auth.uid;
       }
     }
+
+    match /stays/{stayId} {
+      allow read, create: if request.auth != null;
+      allow delete: if request.auth != null && resource.data.createdBy == request.auth.uid;
+    }
   }
 }
 ```

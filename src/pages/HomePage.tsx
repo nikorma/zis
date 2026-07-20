@@ -144,13 +144,14 @@ export default function HomePage() {
           ) : (
             <>
               <button className="btn-primary col-span-2 text-base" onClick={() => nav('/itinerario')}>🥾 Zaino in spalla, si parte!</button>
-              <Link to="/gruppo" className="btn-secondary">👥 Gruppo</Link>
-              <Link to="/occhio" className="btn-secondary col-span-2">📸 Occhio di viaggio (traduci / riconosci)</Link>
+              <Link to="/gruppo" className="tile"><span className="ico">👥</span>Gruppo</Link>
+              <Link to="/occhio" className="tile"><span className="ico">📸</span>Occhio di viaggio</Link>
               {geo.status === 'active' || geo.status === 'low-accuracy' || geo.status === 'stale' ? (
-                <button className="btn-secondary" onClick={geo.stop}>🛑 Disattiva GPS</button>
+                <button className="tile" onClick={geo.stop}><span className="ico">🛑</span>Disattiva GPS</button>
               ) : (
-                <button className="btn-gold" onClick={enableGps}>📡 Attiva GPS</button>
+                <button className="tile !border-oro" onClick={enableGps}><span className="ico">📡</span>Attiva GPS</button>
               )}
+              <Link to="/valigia" className="tile"><span className="ico">🧳</span>Valigia</Link>
             </>
           )}
         </div>

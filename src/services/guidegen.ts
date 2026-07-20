@@ -91,7 +91,10 @@ const CHEAP = /pizzer|trattor|oster|taverna|kebab|paninotec|piadin|rosticc|frigg
 /** Ristoranti vicino a un punto (raggio ~1.2 km), ordinati per distanza.
  *  Motore principale: Overpass API (OpenStreetMap), fatto apposta per i locali
  *  in zona; riserva: Nominatim. */
+export let foodDebug = '';
+
 export async function findRestaurants(center: LatLng, budgetAlto: boolean): Promise<FoodPlace[]> {
+  foodDebug = '';
   const dist = (a: LatLng, b: LatLng) => {
     const R = 6371000, toR = Math.PI / 180;
     const dLat = (b.lat - a.lat) * toR, dLng = (b.lng - a.lng) * toR;
@@ -135,10 +138,29 @@ out center 40;`;
         } as FoodPlace;
       }).filter((p: FoodPlace) => p.name && p.coords.lat);
       }
-    } catch { /* mirror successivo */ }
+    } catch (e) { foodDebug += 'overpass:' + String(e).slice(0, 40) + ' '; }
   }
 
-  // --- Riserva: Nominatim ---
+  // --- Riserva 1: Photon (komoot) ---
+  if (list.length === 0) {
+    try {
+      const r = await fetch(`https://photon.komoot.io/api/?q=restaurant&lat=${center.lat}&lon=${center.lng}&limit=15&lang=it`);
+      if (r.ok) {
+        const j = await r.json();
+        list = (j.features ?? []).map((f: any) => {
+          const pr = f.properties ?? {};
+          const coords = { lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0] };
+          return {
+            name: pr.name,
+            address: [pr.street, pr.housenumber, pr.city].filter(Boolean).join(' '),
+            coords, meters: dist(center, coords), cuisine: undefined,
+          } as FoodPlace;
+        }).filter((p: FoodPlace) => p.name);
+      } else foodDebug += 'photon:' + r.status + ' ';
+    } catch (e) { foodDebug += 'photon:' + String(e).slice(0, 40) + ' '; }
+  }
+
+  // --- Riserva 2: Nominatim ---
   if (list.length === 0) {
     try {
       const d = 0.011;
