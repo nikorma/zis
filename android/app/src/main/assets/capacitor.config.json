@@ -1,0 +1,20 @@
+{
+	"appId": "app.zainoinspalla",
+	"appName": "Zaino in Spalla",
+	"webDir": "dist",
+	"android": {
+		"backgroundColor": "#1E2A4A"
+	},
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 1200,
+			"backgroundColor": "#1E2A4A",
+			"androidScaleType": "CENTER_CROP",
+			"showSpinner": false
+		},
+		"LocalNotifications": {
+			"smallIcon": "ic_stat_icon",
+			"iconColor": "#FF6B4A"
+		}
+	}
+}

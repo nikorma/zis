@@ -91,3 +91,31 @@ service cloud.firestore {
 - Sincronizzazione cloud dell'itinerario personale (oggi: export/import JSON + unione conflitti)
 - QR/beacon per l'avanzamento automatico nelle visite
 - Traduzioni es/en/el (struttura i18n pronta)
+
+## 📱 App Android nativa (Capacitor)
+
+L'app nativa usa **lo stesso codice** della PWA: nessuna doppia manutenzione.
+
+### Compilare l'APK senza avere Android Studio
+1. Carica il progetto su GitHub (come sempre).
+2. Vai nella scheda **Actions** → workflow **"Costruisci APK Android"** → **Run workflow**
+   (parte anche da sola a ogni modifica su `main`).
+3. Al termine, in fondo alla pagina del workflow, scarica l'allegato **zaino-in-spalla-apk**.
+4. Copia l'`.apk` sul telefono e installalo (Android chiederà di consentire le "origini sconosciute").
+
+### Due modalità (in `capacitor.config.ts`)
+| Modalità | Come funziona | Quando usarla |
+|---|---|---|
+| **File dentro l'app** (predefinita) | I file di `dist/` stanno nell'APK; funziona offline dal primo avvio. Per aggiornare: nuova compilazione (automatica su GitHub). | **Play Store** e distribuzione seria |
+| **Guscio dal vivo** (blocco `server` commentato) | L'app carica sempre l'ultima versione da Vercel: si aggiorna da sola come la PWA. | Prove rapide tra amici. ⚠️ Il Play Store rifiuta le app che sono solo un contenitore di un sito |
+
+### Pubblicare sul Play Store (quando sarà il momento)
+1. Account sviluppatore Google Play (25 $ una tantum).
+2. Crea un **keystore** di firma e caricane i dati nei *Secrets* del repository
+   (`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`).
+3. Togli il commento all'ultimo blocco di `.github/workflows/android.yml` per generare il `.aab` firmato.
+4. Prepara scheda dello store: descrizione, schermate, **privacy policy pubblica** (obbligatoria: l'app usa posizione e fotocamera).
+5. Aumenta `versionCode` in `android/app/build.gradle` a ogni pubblicazione.
+
+### Permessi già dichiarati
+GPS (avviso di arrivo), notifiche + vibrazione (spese del gruppo), sveglie esatte (sveglia del viaggio), internet.
