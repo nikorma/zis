@@ -103,6 +103,7 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
               </button>
             ))}
           </div>
+          <p className="text-[10px] opacity-40 pt-1">© {new Date().getFullYear()} nikorma — Orma Studio</p>
         </div>
       ) : slide ? (
         <div key={step} className="flex flex-col items-center gap-4 max-w-sm">

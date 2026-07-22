@@ -1,5 +1,25 @@
 import { useState } from 'react';
-import type { PlaceCard, Stop } from '../types';
+import type { Stop } from '../types';
+
+/** Struttura della scheda (definita qui per non dipendere da versioni diverse dei tipi). */
+export interface PlaceCard {
+  summary: string;
+  type?: string;
+  period?: string | null;
+  description?: string;
+  history?: string;
+  style?: string | null;
+  originalUse?: string | null;
+  currentUse?: string | null;
+  people?: string[];
+  curiosities?: string[];
+  legends?: string[];
+  toSee?: string[];
+  practical?: { duration?: string; bestTime?: string; accessibility?: string | null; tips?: string[] };
+  paid?: boolean;
+  officialSite?: string | null;
+  confident?: boolean;
+}
 import AudioControls from './AudioControls';
 import GuideImage from './GuideImage';
 
@@ -68,19 +88,19 @@ export default function PlaceCardView({
 
       {card.curiosities && card.curiosities.length > 0 && (
         <Section icon="💡" title="Curiosità e aneddoti">
-          <ul className="list-disc pl-5 space-y-1">{card.curiosities.map((x, i) => <li key={i}>{x}</li>)}</ul>
+          <ul className="list-disc pl-5 space-y-1">{card.curiosities.map((x: string, i: number) => <li key={i}>{x}</li>)}</ul>
         </Section>
       )}
 
       {card.legends && card.legends.length > 0 && (
         <Section icon="🧚" title="Leggende">
-          <ul className="list-disc pl-5 space-y-1">{card.legends.map((x, i) => <li key={i}>{x}</li>)}</ul>
+          <ul className="list-disc pl-5 space-y-1">{card.legends.map((x: string, i: number) => <li key={i}>{x}</li>)}</ul>
         </Section>
       )}
 
       {card.toSee && card.toSee.length > 0 && (
         <Section icon="👀" title="Cosa vedere">
-          <ul className="list-disc pl-5 space-y-1">{card.toSee.map((x, i) => <li key={i}>{x}</li>)}</ul>
+          <ul className="list-disc pl-5 space-y-1">{card.toSee.map((x: string, i: number) => <li key={i}>{x}</li>)}</ul>
         </Section>
       )}
 
@@ -89,7 +109,7 @@ export default function PlaceCardView({
           {card.practical.duration && <p><strong>Durata consigliata:</strong> {card.practical.duration}</p>}
           {card.practical.bestTime && <p><strong>Momento migliore:</strong> {card.practical.bestTime}</p>}
           {card.practical.accessibility && <p>♿ {card.practical.accessibility}</p>}
-          {card.practical.tips?.map((tp, i) => <p key={i}>💡 {tp}</p>)}
+          {card.practical.tips?.map((tp: string, i: number) => <p key={i}>💡 {tp}</p>)}
           <p className="text-[11px] opacity-60 mt-1">⚠️ Prezzi e orari non sono garantiti: verifica sul sito ufficiale prima di andare.</p>
         </Section>
       )}

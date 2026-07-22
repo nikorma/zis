@@ -1,5 +1,7 @@
 # Zaino in Spalla 🎒
 
+© 2026 **nikorma** — Orma Studio
+
 PWA installabile: **il tuo compagno di viaggio** per qualsiasi destinazione.
 
 ## Funzionalità

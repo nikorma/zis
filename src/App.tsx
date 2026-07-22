@@ -2,7 +2,9 @@ import { NavLink, Route, Routes } from 'react-router-dom';
 import { useApp } from './state/AppStore';
 import { firebaseReady, subscribeGroup, stopsToDays, getCurrentUid, type GroupStop, type Expense } from './services/group';
 import { t } from './lib/i18n';
+import { APP_VERSION } from './lib/version';
 import Onboarding, { onboardingNeeded } from './components/Onboarding';
+import InstallPrompt from './components/InstallPrompt';
 import { useEffect, useRef, useState } from 'react';
 import HomePage from './pages/HomePage';
 import ItineraryPage from './pages/ItineraryPage';
@@ -110,6 +112,9 @@ function Splash() {
       <img src="./icons/icon-192.png" alt="" />
       <h1 className="font-display font-black text-3xl text-[#FDF6EA]">Zaino <span className="text-oro">in Spalla</span></h1>
       <p className="text-sm text-[#FDF6EA] opacity-70">Il tuo compagno di viaggio</p>
+      <p className="absolute bottom-6 text-[10px] text-[#FDF6EA] opacity-40 font-mono">{APP_VERSION}</p>
+      <p className="text-center text-xs opacity-50 pt-2 font-mono">{APP_VERSION}</p>
+      <p className="text-center text-xs opacity-50">© {new Date().getFullYear()} nikorma — Orma Studio</p>
     </div>
   );
 }
@@ -134,6 +139,7 @@ export default function App() {
   return (
     <div className="min-h-screen pb-20">
       {intro && <Onboarding onDone={() => setIntro(false)} />}
+      {!intro && <InstallPrompt />}
       <Splash />
       <GroupTripSync />
       <Routes>
