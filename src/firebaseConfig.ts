@@ -17,12 +17,12 @@
  * progetto); la sicurezza la fanno le regole Firestore.
  */
 export const firebaseConfig = {
-  apiKey: "AIzaSyCdR2i36maCNoVbuHYAZ0Sa5GSNRutEyp8",
-  authDomain: "zaino-gruppo.firebaseapp.com",
-  projectId: "zaino-gruppo",
-  storageBucket: "zaino-gruppo.firebasestorage.app",
-  messagingSenderId: "17308652440",
-  appId: "1:17308652440:web:3de77015b5e02150cc91ed"
+  apiKey: 'INCOLLA-QUI',
+  authDomain: 'INCOLLA-QUI.firebaseapp.com',
+  projectId: 'INCOLLA-QUI',
+  storageBucket: 'INCOLLA-QUI.appspot.com',
+  messagingSenderId: 'INCOLLA-QUI',
+  appId: 'INCOLLA-QUI',
 };
 
 export const isFirebaseConfigured = !firebaseConfig.apiKey.includes('INCOLLA');
