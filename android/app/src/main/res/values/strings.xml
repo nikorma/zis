@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">Zaino in Spalla</string>
-    <string name="title_activity_main">Zaino in Spalla</string>
-    <string name="package_name">app.zainoinspalla</string>
-    <string name="custom_url_scheme">app.zainoinspalla</string>
-</resources>
