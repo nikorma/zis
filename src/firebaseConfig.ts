@@ -16,13 +16,35 @@
  * Nota: questa configurazione NON è un segreto (identifica solo il
  * progetto); la sicurezza la fanno le regole Firestore.
  */
-export const firebaseConfig = {
-  apiKey: "AIzaSyCdR2i36maCNoVbuHYAZ0Sa5GSNRutEyp8",
-  authDomain: "zaino-gruppo.firebaseapp.com",
-  projectId: "zaino-gruppo",
-  storageBucket: "zaino-gruppo.firebasestorage.app",
-  messagingSenderId: "17308652440",
-  appId: "1:17308652440:web:3de77015b5e02150cc91ed",
+/**
+ * ⭐ MODO CONSIGLIATO (non si perde mai): metti i valori nelle
+ * "Environment Variables" di Vercel, una volta sola:
+ *   VITE_FIREBASE_API_KEY, VITE_FIREBASE_AUTH_DOMAIN, VITE_FIREBASE_PROJECT_ID,
+ *   VITE_FIREBASE_STORAGE_BUCKET, VITE_FIREBASE_MESSAGING_SENDER_ID, VITE_FIREBASE_APP_ID
+ * Così, quando ricarichi i file del progetto, la configurazione resta intatta.
+ *
+ * In alternativa (o come riserva) puoi scriverli qui sotto al posto di INCOLLA-QUI.
+ */
+const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env ?? {};
+
+const fromEnv = {
+  apiKey: env.VITE_FIREBASE_API_KEY,
+  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: env.VITE_FIREBASE_APP_ID,
 };
 
-export const isFirebaseConfigured = !firebaseConfig.apiKey.includes('INCOLLA');
+const fromFile = {
+  apiKey: 'INCOLLA-QUI',
+  authDomain: 'INCOLLA-QUI.firebaseapp.com',
+  projectId: 'INCOLLA-QUI',
+  storageBucket: 'INCOLLA-QUI.appspot.com',
+  messagingSenderId: 'INCOLLA-QUI',
+  appId: 'INCOLLA-QUI',
+};
+
+export const firebaseConfig = fromEnv.apiKey ? (fromEnv as typeof fromFile) : fromFile;
+
+export const isFirebaseConfigured = Boolean(firebaseConfig.apiKey) && !firebaseConfig.apiKey.includes('INCOLLA');

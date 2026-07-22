@@ -35,6 +35,7 @@ npm run test       # test unitari (vitest)
 | `OPENAI_API_KEY` | Planner AI + assistente (`api/planner.js`, `api/ai.js`) |
 | `AI_MAX_REQUESTS_PER_HOUR`, `AI_DAILY_TOKEN_LIMIT` | Limiti di costo |
 | `ELEVENLABS_API_KEY` (+ `ELEVENLABS_VOICE_F/_M`) | Voce naturale (`api/tts.js`) |
+| `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID` | Gruppo di viaggio e modalità struttura (consigliato: così la configurazione non si perde ricaricando i file) |
 
 Senza chiavi l'app funziona al 100% con la voce del dispositivo; planner e assistente mostrano come attivarli.
 
