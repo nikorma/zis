@@ -1,0 +1,67 @@
+name: Costruisci APK Android
+
+# Si avvia a ogni modifica su main, oppure a mano dalla scheda "Actions".
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Scarica il codice
+        uses: actions/checkout@v4
+
+      - name: Prepara Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Prepara Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Installa le dipendenze
+        run: npm ci || npm install
+
+      - name: Costruisci l'app web
+        run: npm run build
+
+      - name: Icone e sincronizzazione Android
+        run: |
+          node scripts/make-icons.mjs
+          node scripts/android-icons.mjs
+          npx cap sync android
+
+      - name: Compila l'APK (debug, installabile subito)
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Carica l'APK come allegato
+        uses: actions/upload-artifact@v4
+        with:
+          name: zaino-in-spalla-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+      # Per il Play Store serve un pacchetto .aab FIRMATO:
+      # aggiungi i segreti del keystore e togli il commento qui sotto.
+      # - name: Compila il bundle per il Play Store
+      #   env:
+      #     KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      #     KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      #     KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+      #     KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      #   run: |
+      #     echo "$KEYSTORE_BASE64" | base64 -d > android/app/zaino.keystore
+      #     cd android
+      #     ./gradlew bundleRelease \
+      #       -Pandroid.injected.signing.store.file=zaino.keystore \
+      #       -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
+      #       -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+      #       -Pandroid.injected.signing.key.password="$KEY_PASSWORD"

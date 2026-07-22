@@ -1,0 +1,197 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   Zaino in Spalla — il tuo compagno di viaggio
+   Palette: blu zaino #1E2A4A · corallo tramonto #FF6B4A · sabbia #F6EEDF · sole #FFC145
+   Firme visive: la CINGHIA in diagonale sull'intestazione e il
+   SENTIERO puntinato che collega le tappe.
+   ============================================================ */
+
+:root {
+  --dusk: #1e2a4a;
+  --dusk-2: #2a3a63;
+  --terra: #ff6b4a;        /* corallo tramonto (nome storico mantenuto) */
+  --terra-deep: #e14e2e;
+  --crema: #f6eedf;        /* sabbia */
+  --oro: #ffc145;          /* sole */
+  --menta: #3fbf9b;
+  --ink: #22293b;
+}
+
+html { -webkit-tap-highlight-color: transparent; }
+
+body {
+  @apply bg-crema text-ink font-body antialiased;
+  overscroll-behavior-y: none;
+}
+.dark body { @apply bg-notte text-[#EDE9E0]; }
+
+/* Testo ingrandibile (impostazione accessibilità) */
+.large-text { font-size: 118%; }
+/* Alto contrasto */
+.high-contrast body { @apply bg-white text-black; }
+.high-contrast .dark body { @apply bg-black text-white; }
+.high-contrast .card { @apply border-2 border-black; }
+/* Riduzione animazioni */
+.reduced-motion *, .reduced-motion *::before, .reduced-motion *::after {
+  animation-duration: 0.001s !important;
+  transition-duration: 0.001s !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001s !important; transition-duration: 0.001s !important; }
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl bg-white border border-[#EAE0CB] p-4;
+    box-shadow: 0 4px 14px rgba(30, 42, 74, 0.07);
+  }
+  .dark .card { @apply bg-[#202B49] border-[#33406B]; }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 font-medium
+      transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
+      focus-visible:outline-terra disabled:opacity-50 min-h-[48px];
+  }
+  .btn-primary {
+    @apply btn text-white;
+    background: linear-gradient(120deg, var(--terra), var(--terra-deep));
+    box-shadow: 0 8px 20px rgba(255, 107, 74, 0.35);
+  }
+  .btn-primary:hover { filter: brightness(1.06); }
+  .btn-secondary { @apply btn bg-white text-dusk border-2 border-[#E4D7BC] hover:border-terra; }
+  .dark .btn-secondary { @apply bg-transparent text-[#EDE9E0] border-[#33406B]; }
+  .dark .btn-secondary { @apply bg-transparent; }
+  .btn-gold { @apply btn bg-oro text-[#5A4100] hover:brightness-105; }
+  .btn-ghost { @apply btn bg-transparent hover:bg-black/5; }
+  .dark .btn-ghost { @apply hover:bg-white/10; }
+
+  .input {
+    @apply w-full rounded-xl border border-[#d8c9b0] bg-white px-3 py-2.5 text-base
+      focus:outline-none focus:ring-2 focus:ring-terra/50 min-h-[44px];
+  }
+  .dark .input { @apply bg-[#231913] border-[#4a382c] text-[#efe6da]; }
+
+  .label { @apply block text-sm font-medium mb-1 opacity-80; }
+
+  .chip { @apply inline-flex items-center rounded-full px-3.5 py-1.5 text-sm font-semibold border-2; }
+  .chip-on { @apply chip bg-dusk text-white border-dusk; }
+  .dark .chip-on { @apply bg-terra border-terra; }
+  .chip-off { @apply chip bg-white/60 border-[#E4D7BC] text-[#6B6350]; }
+  .dark .chip-off { @apply bg-transparent border-[#33406B] text-[#B9B3A4]; }
+  .badge-ok { @apply inline-flex items-center rounded-full bg-[#DCF5EC] text-[#0E7A5D] px-2.5 py-0.5 text-xs font-semibold; }
+  .badge-warn { @apply inline-flex items-center rounded-full bg-amber-100 text-amber-800 px-2.5 py-0.5 text-xs font-semibold; }
+  .badge-verify { @apply inline-flex items-center rounded-full bg-orange-100 text-orange-900 px-2.5 py-0.5 text-xs font-semibold; }
+  .dark .badge-ok { @apply bg-green-900/60 text-green-200; }
+  .dark .badge-warn { @apply bg-amber-900/60 text-amber-200; }
+  .dark .badge-verify { @apply bg-orange-900/60 text-orange-200; }
+
+  /* Firma 1: il sentiero puntinato (divisore) */
+  .azulejo-band {
+    height: 6px;
+    background: radial-gradient(circle, var(--terra) 2.2px, transparent 2.6px) 0 50% / 18px 6px repeat-x;
+  }
+  .azulejo-band::after { content: ''; }
+
+  /* Firma 2: intestazione "cinghia" per la Home */
+  .hero-dusk {
+    @apply relative overflow-hidden rounded-3xl text-[#FDF6EA] p-5;
+    background: linear-gradient(150deg, var(--dusk) 0%, var(--dusk-2) 55%, #4a3560 100%);
+  }
+  .hero-dusk::before {
+    content: '';
+    position: absolute; top: -30px; right: 28px; width: 30px; height: 160%;
+    background: linear-gradient(180deg, var(--terra), var(--terra-deep));
+    transform: rotate(14deg); border-radius: 6px;
+    box-shadow: 0 0 0 5px rgba(255,255,255,.10);
+  }
+  .hero-dusk::after {
+    content: '';
+    position: absolute; top: 40px; right: 36px; width: 16px; height: 9px;
+    background: var(--oro); transform: rotate(14deg); border-radius: 3px;
+  }
+  .hero-panel {
+    @apply mt-3 rounded-2xl p-3;
+    background: rgba(255,255,255,.10);
+    border: 1px solid rgba(255,255,255,.18);
+    backdrop-filter: blur(4px);
+  }
+
+  /* Firma 2b: la giornata come sentiero (itinerario) */
+  .route { @apply relative pl-6; }
+  .route::before {
+    content: ''; position: absolute; left: 8px; top: 10px; bottom: 10px;
+    border-left: 3px dotted #C9B99A;
+  }
+  .dark .route::before { border-color: #3E4C77; }
+  .route > li { position: relative; }
+  .route > li::before {
+    content: ''; position: absolute; left: -22px; top: 18px;
+    width: 12px; height: 12px; border-radius: 9999px;
+    background: var(--terra);
+    box-shadow: 0 0 0 3px var(--crema), 0 0 0 5px #E8D9BD;
+  }
+  .dark .route > li::before { box-shadow: 0 0 0 3px #141C33, 0 0 0 5px #33406B; }
+  .route > li.done::before { background: var(--menta); }
+
+  .page-title { @apply font-display font-black text-3xl md:text-4xl tracking-tight; }
+
+  /* ✨ Animazioni */
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  @keyframes floaty { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-8px) rotate(3deg); } }
+  @keyframes shine { from { transform: translateX(-120%) rotate(14deg); } to { transform: translateX(340%) rotate(14deg); } }
+  .anim-rise { animation: rise 0.5s ease-out both; }
+  .anim-rise-1 { animation: rise 0.5s ease-out 0.08s both; }
+  .anim-rise-2 { animation: rise 0.5s ease-out 0.16s both; }
+  .anim-rise-3 { animation: rise 0.5s ease-out 0.24s both; }
+  .floaty { display: inline-block; animation: floaty 3s ease-in-out infinite; }
+  .hero-dusk .shine {
+    position: absolute; top: -30%; left: 0; width: 34px; height: 160%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+    animation: shine 3.5s ease-in-out 0.8s infinite;
+    pointer-events: none;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary, .btn-gold, .btn-secondary { transition: transform 0.12s ease, filter 0.12s ease, box-shadow 0.12s ease; }
+  .btn-primary:hover, .btn-gold:hover { transform: translateY(-1px); }
+  .tile {
+    @apply flex flex-col items-center justify-center gap-1 rounded-2xl bg-white border-2 border-[#EAE0CB] py-3 px-2 font-semibold text-sm text-center;
+    min-height: 76px;
+    box-shadow: 0 3px 10px rgba(30, 42, 74, 0.06);
+    transition: transform 0.12s ease, border-color 0.12s ease;
+  }
+  .tile:active { transform: scale(0.96); }
+  .tile:hover { border-color: var(--terra); }
+  .dark .tile { @apply bg-[#202B49] border-[#33406B] text-[#EDE9E0]; }
+  .tile .ico { font-size: 1.6rem; line-height: 1; }
+
+  @keyframes fromLeft { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
+  @keyframes fromRight { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+  .stagger-lr > *:nth-child(odd) { animation: fromLeft 0.45s ease-out both; }
+  .stagger-lr > *:nth-child(even) { animation: fromRight 0.45s ease-out both; }
+  .stagger-lr > *:nth-child(1) { animation-delay: 0.15s; }
+  .stagger-lr > *:nth-child(2) { animation-delay: 0.25s; }
+  .stagger-lr > *:nth-child(3) { animation-delay: 0.35s; }
+  .stagger-lr > *:nth-child(4) { animation-delay: 0.45s; }
+  .stagger-lr > *:nth-child(5) { animation-delay: 0.55s; }
+  .stagger-lr > *:nth-child(6) { animation-delay: 0.65s; }
+
+  @keyframes logoPop { 0% { opacity: 0; transform: scale(0.5); } 60% { transform: scale(1.08); } 100% { opacity: 1; transform: scale(1); } }
+  @keyframes splashOut { to { opacity: 0; visibility: hidden; } }
+  .splash {
+    position: fixed; inset: 0; z-index: 4000;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    background: linear-gradient(150deg, #1E2A4A 0%, #2A3A63 55%, #4A3560 100%);
+    animation: splashOut 0.45s ease 1.6s forwards;
+  }
+  .splash img { width: 96px; height: 96px; border-radius: 24px; animation: logoPop 0.7s ease-out both; box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
+  .splash h1 { animation: rise 0.5s ease-out 0.35s both; }
+  .splash p { animation: rise 0.5s ease-out 0.55s both; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .anim-rise, .anim-rise-1, .anim-rise-2, .anim-rise-3, .floaty, .hero-dusk .shine,
+    .stagger-lr > * { animation: none; }
+  }
+}

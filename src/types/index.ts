@@ -103,6 +103,7 @@ export interface Stop {
   presentation?: string;       // presentazione "da guida" (generata o scritta a mano)
   paid?: boolean;              // richiede biglietto? (true/false; assente = non noto)
   interiorGuide?: { name: string; text: string }[]; // guida interna punto per punto
+  card?: PlaceCard;            // scheda dettagliata (stile guida)
   visited: boolean;
   transit?: TransitHint;       // spostamento DALLA tappa precedente
 }
@@ -114,6 +115,25 @@ export interface Trip {
   days: Day[];
   createdAt: string;
   groupId?: string;            // 🔗 se presente: specchio del Gruppo di viaggio
+}
+
+export interface PlaceCard {
+  summary: string;
+  type?: string;
+  period?: string | null;
+  description?: string;
+  history?: string;
+  style?: string | null;
+  originalUse?: string | null;
+  currentUse?: string | null;
+  people?: string[];
+  curiosities?: string[];
+  legends?: string[];
+  toSee?: string[];
+  practical?: { duration?: string; bestTime?: string; accessibility?: string | null; tips?: string[] };
+  paid?: boolean;
+  officialSite?: string | null;
+  confident?: boolean;
 }
 
 export interface Day {

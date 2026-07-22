@@ -1,4 +1,5 @@
 import type { AiUsageEntry, AppData } from '../types';
+import { apiUrl } from '../lib/api';
 
 /**
  * Client per "Chiedi alla guida".
@@ -56,7 +57,7 @@ export async function askGuide(
     return { ok: false, error: 'Sei offline: l’assistente richiede internet. Le schede dei luoghi restano disponibili offline.' };
   }
   try {
-    const res = await fetch('/api/ai', {
+    const res = await fetch(apiUrl('/api/ai'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ question, context }),
