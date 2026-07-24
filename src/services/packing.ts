@@ -32,6 +32,7 @@ export interface ClimateEstimate {
 export interface PackingItem {
   name: string; qty: number; note?: string; category: string;
   custom?: boolean;         // aggiunto a mano dall'utente
+  userNote?: string;        // nota scritta dall'utente su questo capo
   vol: number;              // litri per unità (stima)
   trim: number;             // priorità di riduzione (più alta = si taglia prima); 0 = intoccabile
   min: number;              // quantità minima

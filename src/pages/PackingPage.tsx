@@ -45,6 +45,8 @@ export default function PackingPage() {
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [extra, setExtra] = useState({ name: '', qty: 1, vol: 0.5 });
+  const [noteFor, setNoteFor] = useState<string | null>(null);   // capo con la nota aperta
+  const [noteText, setNoteText] = useState('');
   const [capText, setCapText] = useState<string>(String(defaultCapacity(EMPTY_INPUT.luggages)));
 
   // Tiene il campo litri allineato quando cambiano i bagagli o si apre una valigia,
@@ -168,6 +170,18 @@ export default function PackingPage() {
     applyItems(items);
   };
 
+  const openNote = (name: string, current?: string) => {
+    setNoteFor(name);
+    setNoteText(current ?? '');
+  };
+
+  const saveNote = () => {
+    if (!result || !noteFor) return;
+    applyItems(result.items.map((i) => (i.name === noteFor ? { ...i, userNote: noteText.trim() || undefined } : i)));
+    setNoteFor(null);
+    setNoteText('');
+  };
+
   const removeItem = (name: string) => {
     if (!result) return;
     applyItems(result.items.filter((i) => i.name !== name));
@@ -175,7 +189,7 @@ export default function PackingPage() {
 
   const share = () => {
     if (!result) return;
-    const lines = result.items.map((i) => `${checked.has(i.name) ? '✅' : '⬜'} ${i.qty}× ${i.name}${i.note ? ` — ${i.note}` : ''}`);
+    const lines = result.items.map((i) => `${checked.has(i.name) ? '✅' : '⬜'} ${i.qty}× ${i.name}${i.note ? ` — ${i.note}` : ''}${i.userNote ? ` 📝 ${i.userNote}` : ''}`);
     const txt = `🧳 Valigia per ${input.destination} (${result.days} giorni)\n\n${lines.join('\n')}\n\n${result.tips.map((t) => '💡 ' + t).join('\n')}`;
     if (navigator.share) navigator.share({ text: txt }).catch(() => {});
     else navigator.clipboard.writeText(txt).then(() => alert('Lista copiata!'));
@@ -240,8 +254,11 @@ export default function PackingPage() {
         </div>
 
         <div className="grid grid-cols-2 gap-2">
-          <label className="label">Partenza<input className="input" type="date" value={input.startDate} onChange={(e) => set('startDate', e.target.value)} /></label>
-          <label className="label">Ritorno<input className="input" type="date" value={input.endDate} onChange={(e) => set('endDate', e.target.value)} /></label>
+          <label className="label">Partenza<input className="input" type="date" value={input.startDate} onChange={(e) => {
+            const v = e.target.value;
+            setInput((i) => ({ ...i, startDate: v, endDate: !i.endDate || i.endDate < v ? v : i.endDate }));
+          }} /></label>
+          <label className="label">Ritorno<input className="input" type="date" min={input.startDate || undefined} value={input.endDate} onChange={(e) => set('endDate', e.target.value)} /></label>
         </div>
         {input.startDate && input.endDate && input.startDate <= input.endDate && (
           <p className="text-xs opacity-70">📅 {tripDays(input.startDate, input.endDate)} giorni di viaggio</p>
@@ -389,13 +406,34 @@ export default function PackingPage() {
                     <li key={i.name}>
                       <label className={`flex items-start gap-2 cursor-pointer ${checked.has(i.name) ? 'opacity-50 line-through' : ''}`}>
                         <input type="checkbox" className="mt-1" checked={checked.has(i.name)} onChange={() => toggle(i.name)} />
-                        <span className="flex-1"><strong>{i.qty}×</strong> {i.name}{i.note && <span className="block text-xs opacity-70 no-underline">↳ {i.note}</span>}</span>
+                        <span className="flex-1">
+                          <strong>{i.qty}×</strong> {i.name}
+                          {i.note && <span className="block text-xs opacity-70 no-underline">↳ {i.note}</span>}
+                          {i.userNote && <span className="block text-xs no-underline text-terra font-medium">📝 {i.userNote}</span>}
+                        </span>
                       </label>
                       <span className="inline-flex items-center gap-1 ml-6">
                         <button className="btn-ghost !min-h-[28px] !py-0 !px-2 text-sm" aria-label={`Meno ${i.name}`} onClick={() => changeQty(i.name, -1)}>−</button>
                         <button className="btn-ghost !min-h-[28px] !py-0 !px-2 text-sm" aria-label={`Più ${i.name}`} onClick={() => changeQty(i.name, +1)}>＋</button>
+                        <button className="btn-ghost !min-h-[28px] !py-0 !px-2 text-sm" aria-label={`Nota su ${i.name}`} title="Aggiungi una nota" onClick={() => openNote(i.name, i.userNote)}>📝</button>
                         {i.custom && <button className="text-xs opacity-60 underline ml-1" onClick={() => removeItem(i.name)}>✕ togli</button>}
                       </span>
+                      {noteFor === i.name && (
+                        <div className="ml-6 mt-1 space-y-1">
+                          <input
+                            className="input !py-1.5 text-sm"
+                            autoFocus
+                            placeholder="La tua nota (es. quello blu, già stirato…)"
+                            value={noteText}
+                            onChange={(e) => setNoteText(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') saveNote(); if (e.key === 'Escape') setNoteFor(null); }}
+                          />
+                          <div className="flex gap-2">
+                            <button className="btn-gold !min-h-[34px] !py-0.5 text-xs" onClick={saveNote}>Salva nota</button>
+                            <button className="btn-ghost !min-h-[34px] !py-0.5 text-xs" onClick={() => setNoteFor(null)}>Annulla</button>
+                          </div>
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>

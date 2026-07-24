@@ -83,8 +83,11 @@ export default function HostPage() {
           <input className="input" placeholder="es. Marco" value={guest} onChange={(e) => setGuest(e.target.value)} />
         </label>
         <div className="grid grid-cols-2 gap-2">
-          <label className="label">📅 Check-in<input className="input" type="date" value={dates.checkin} onChange={(e) => setDates({ ...dates, checkin: e.target.value })} /></label>
-          <label className="label">📅 Check-out<input className="input" type="date" value={dates.checkout} onChange={(e) => setDates({ ...dates, checkout: e.target.value })} /></label>
+          <label className="label">📅 Check-in<input className="input" type="date" value={dates.checkin} onChange={(e) => {
+            const v = e.target.value;
+            setDates((d) => ({ checkin: v, checkout: !d.checkout || d.checkout < v ? v : d.checkout }));
+          }} /></label>
+          <label className="label">📅 Check-out<input className="input" type="date" min={dates.checkin || undefined} value={dates.checkout} onChange={(e) => setDates({ ...dates, checkout: e.target.value })} /></label>
         </div>
       </section>
 

@@ -112,8 +112,11 @@ export default function GroupPage() {
             <input className="input" value={gname} onChange={(e) => setGname(e.target.value)} placeholder="es. Atene 2026" />
           </label>
           <div className="grid grid-cols-2 gap-2">
-            <label className="label">📅 Partenza<input className="input" type="date" value={gdates.start} onChange={(e) => setGdates({ ...gdates, start: e.target.value })} /></label>
-            <label className="label">📅 Ritorno<input className="input" type="date" value={gdates.end} onChange={(e) => setGdates({ ...gdates, end: e.target.value })} /></label>
+            <label className="label">📅 Partenza<input className="input" type="date" value={gdates.start} onChange={(e) => {
+              const v = e.target.value;
+              setGdates((g) => ({ start: v, end: !g.end || g.end < v ? v : g.end }));
+            }} /></label>
+            <label className="label">📅 Ritorno<input className="input" type="date" min={gdates.start || undefined} value={gdates.end} onChange={(e) => setGdates({ ...gdates, end: e.target.value })} /></label>
           </div>
           <button className="btn-primary w-full"
             disabled={busy || !name.trim() || !gdates.start || !gdates.end || gdates.start > gdates.end}

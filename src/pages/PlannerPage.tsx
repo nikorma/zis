@@ -238,8 +238,13 @@ export default function PlannerPage() {
               : <input className="input mt-2" placeholder="…oppure scrivila qui" value={dest} onChange={(e) => setDest(e.target.value)} />}
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <label className="label">Arrivo<input className="input" type="date" value={start} onChange={(e) => setStart(e.target.value)} /></label>
-            <label className="label">Partenza<input className="input" type="date" value={end} onChange={(e) => setEnd(e.target.value)} /></label>
+            <label className="label">Arrivo<input className="input" type="date" value={start} onChange={(e) => {
+              const v = e.target.value;
+              setStart(v);
+              // il ritorno non può essere prima dell'arrivo: il calendario parte da lì
+              if (v && (!end || end < v)) setEnd(v);
+            }} /></label>
+            <label className="label">Partenza<input className="input" type="date" min={start || undefined} value={end} onChange={(e) => setEnd(e.target.value)} /></label>
             <label className="label">Orario check-in<input className="input" type="time" value={checkin} onChange={(e) => setCheckin(e.target.value)} /></label>
             <label className="label">Orario check-out<input className="input" type="time" value={checkout} onChange={(e) => setCheckout(e.target.value)} /></label>
           </div>
